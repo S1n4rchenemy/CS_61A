@@ -17,6 +17,11 @@ def choose(paragraphs, select, k):
     """
     # BEGIN PROBLEM 1
     "*** YOUR CODE HERE ***"
+    selected = [paragraph for paragraph in paragraphs if select(paragraph)]
+    if k >= len(selected):
+        return ''
+    else:
+        return selected[k]
     # END PROBLEM 1
 
 
@@ -33,6 +38,14 @@ def about(topic):
     assert all([lower(x) == x for x in topic]), 'topics should be lowercase.'
     # BEGIN PROBLEM 2
     "*** YOUR CODE HERE ***"
+    def select(paragraph):
+        paragraph_list = split(remove_punctuation(lower(paragraph)))
+        for subtopic in topic:
+            if subtopic in paragraph_list:
+                return True 
+        return False 
+
+    return select 
     # END PROBLEM 2
 
 
@@ -57,6 +70,14 @@ def accuracy(typed, reference):
     reference_words = split(reference)
     # BEGIN PROBLEM 3
     "*** YOUR CODE HERE ***"
+    if len(typed_words) == 0:
+        return 0.0
+    elif len(typed_words) >= len(reference_words):
+        check_list = [1 for x in range(len(reference_words)) if typed_words[x] == reference_words[x]]
+        return (sum(check_list) / len(typed_words)) * 100
+    else:
+        check_list = [1 for x in range(len(typed_words)) if typed_words[x] == reference_words[x]]
+        return (sum(check_list) / len(typed_words)) * 100
     # END PROBLEM 3
 
 
@@ -65,6 +86,7 @@ def wpm(typed, elapsed):
     assert elapsed > 0, 'Elapsed time must be positive'
     # BEGIN PROBLEM 4
     "*** YOUR CODE HERE ***"
+    return len(typed) / elapsed * 12
     # END PROBLEM 4
 
 
