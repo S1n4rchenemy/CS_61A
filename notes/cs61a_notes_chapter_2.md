@@ -1187,7 +1187,7 @@ A binarized tree has at most two branches.  A common tree transformation called 
 
 #### 2.3.7 Linked Lists
 
-jifjid
+
 
 
 
