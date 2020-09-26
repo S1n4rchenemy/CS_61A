@@ -660,6 +660,40 @@ To evaluate the list comprehension:
 A third common pattern in sequence processing is to aggregate all values in a sequence into a single value.  The built-in functions `sum`, `min`, and `max` are all examples of <u>aggregation functions</u>.
 <br/>
 
+* `sum(iterable[, start]) -> value`: Return the sum of an iterable of **numbers** (**NOT** strings) plus the value of parameter 'start' (which defaults to 0).  When the iterable is empty, return start.
+  ```python
+  >>> sum([2, 3, 4], 5)
+  14
+
+  >>> sum([[2, 3], [4]]) 
+  Traceback (most recent call last):
+    File "<stdin>", line 1, in <module>
+  TypeError: unsupported operand type(s) for +: 'int' and 'list'
+
+  >>> sum([[2, 3], [4]], [])  # notice the use of the start value
+  [2, 3, 4]
+  ``` 
+  <br/>
+
+* `max(iterable[, key=func]) -> value` / `max(a, b, c, ...[, key=func]) -> value`: With a single iterable argument (could also be strings), return its largest item.  With two or more arguments, return the largest argument.
+  ```python
+  >>> max(0, 1, 2, 3, 4)
+  4
+  
+  >>> max(range(10), key=lambda x: 7 - (x - 4) * (x - 2))
+  3
+  ``` 
+  <br/>
+
+* `all(iterable) -> bool`: Return `True` if `bool(x)` is `True` for all values `x` in the iterable.  If the iterable is empty, return `True`.
+  ```python
+  >>> all([x < 5 for x in range(5)])
+  True 
+
+  >>> all(range(5))
+  False
+  ``` 
+  <br/>
 
 By combining the patterns of evaluating an expression for each element, selecting a subset of elements, and aggregating elements, we can solve problems using a sequence processing approach.
 <br/>
@@ -986,7 +1020,7 @@ Read [the string chapeter of Dive into Python 3](https://diveintopython3.problem
 
 #### 2.3.6 Trees 
 
-Our ability to use lists as the elements of other lists provides a new means of combination in our programming language &mdash; a *closure property* of a data type.  In general, a method for combining data values has a closure property if the result of combination can itself be combined using the same method.
+Our ability to use lists as the elements of other lists provides a new means of combination in our programming language &mdash; a <u>*closure property*</u> of a data type.  In general, a method for combining data values has a closure property if the result of combination can itself be combined using the same method.
 
 Closure is the key to power in any means of combination because it permits us to create hierarchical structures &mdash; structures made up of parts, which themselves made up of parts, and so on.
 
@@ -1187,8 +1221,234 @@ A binarized tree has at most two branches.  A common tree transformation called 
 
 #### 2.3.7 Linked Lists
 
+We can also develop sequence representation that are *not* built into Python.  A common representation of a sequence constructed from nested pairs is called a <u>*linked list*</u>.
+
+The environment diagram below illustrates the linked list representation of a four-element sequence containing 1, 2, 3, and 4.
+
+<img src='./assets/2_3_7_fig_1.png' width='800' alt='2.3.7 fig. 1' /><br/>
+
+A linked list is a pair containing the first element of the sequence (in the case 1) and the rest fo the sequence (in this case a representation of 2, 3, 4).  The second element is also a linked list.  The rest of the inner-most linked containing only 4 is `'empty'`, a value that represents an empty linked list.
+
+Linked lists have recursive structure $\implies$ the rest of a linked list is a linked list or `'empty'`.
+
+We can define an abstract data representation to validate, construct and select the components of linked lists.
+
+```python
+>>> empty = 'empty'
+>>> def is_link(s):
+        """s is a linked list if it is empty or a (first, rest) pair."""
+        return s == empty or (len(s) == 2 and is_link(s[1]))
+
+>>> def link(first, rest):
+        """Construct a linked list from its first element and the rest."""
+        assert is_link(rest), 'rest must be a linked list'
+        return [first, rest]
+
+>>> def first(s):
+        """Return the first element of a linked list."""
+        assert is_link(s), 'first only applies to linked lists.'
+        assert s != empty, 'empty linked list has no first element.'
+        return s[0]
+
+>>> def rest(s):
+        """Return the rest of the elements of a linked list s."""
+        assert is_link(s), 'rest onl applies to linked lists.'
+        assert s != empty, 'empty linked list has no rest.'
+        return s[1]
+``` 
+
+* `link` is a constructor and `first` and `rest` are selectors for an abstract data representation of linked list.
+
+* The behavior condition for a linked list is that, like a pair, its constructor and selectors are inverse functions.
+  * *i.e.*, if a linked list `s` was constructed from first element `f` and linked list `r`, then `first(s)` returns `f`, and `rest(s)` returns `r`
+<br/>
+
+We can use the constructor and selectors to manipulate linked list:
+
+```python
+>>> four = link(1, link(2, link(3, link(4, empty))))
+>>> first(four)
+1
+>>> rest(four)
+[2, [3, [4, 'empty']]]
+``` 
+<u>Note:</u> Our implementation above uses pairs that are two-element `list` values.  It is also totally possible to use *functions* alone to implement the pair and thus the linked list.
+<br/>
 
 
+Using the abstract data representation we have defined, we can implement the two behaviors that characterize a sequence: **length** and **element selection**.
+
+```python
+>>> def len_link(s):
+        """Return the length of linked list s."""
+        length = 0
+        while s != empty:
+            s, length = rest(s), length + 1
+        return length 
+
+>>> def getitem_link(s, i):
+        """Return the element at index i of linked list s."""
+        while i > 0:
+            s, i = rest(s), i - 1
+        return first(s)
+
+>>> len_link(four)
+4
+>>> getitem_link(four, 1)
+2
+``` 
+
+This example demonstrates a common pattern of computation with linked lists, where each step in an iteration operates on an icreasingly shorter suffix of the original list.  
+
+This incremental processing to find the length and elements of a linked list does take some time to compute.  Python's built-in sequence types are implemented in a more efficient way.
+<br/>
+
+
+##### <u>Recursive manipulation</u>
+
+Both `len_link` and `getitem_link` are iterative.  We can also implement length and element selection using *recursion*.
+
+```python
+>>> def len_link_recursive(s):
+        """Return the length of a linked list s."""
+        if s == empty:
+            return 0
+        else:
+            return 1 + len_link_recursive(rest[1])
+
+>>> def getitem_link_recursive(s, i):
+        """Return the element at index i of linked list s."""
+        if i == 0:
+            return first(s)
+        return getitem_link_recursive(rest(s), i - 1)
+
+>>> len_link_recursive(four)
+4
+>>> getitem_link_recursive(four, 1)
+2
+``` 
+
+Recursion is also useful for transforming and combining linked lists.
+
+```python
+>>> def extend_link(s, t):
+        """Return a list with the elements of s followed by those of t."""
+        assert is_link(s) and is_link(t)
+        if s == empty:
+            return t 
+        else:
+            return link(first(s), extend_link(rest(s), t))
+
+>>> extend_link(four, four)
+[1, [2, [3, [4, [1, [2, [3, [4, 'empty']]]]]]]]
+
+
+>>> def apply_to_all_link(f, s):
+        """Apply f to each element of s."""
+        assert is_link(s)
+        if s == empty:
+            return s
+        else:
+            return link(f(first(s)), apply_to_all_link(f, rest(s)))
+
+>>> apply_to_all_link(lambda x: x * x, four)
+[1, [4, [9, [16, 'empty']]]]
+
+
+>>> def keep_if_link(f, s):
+        """Return a list with elements of s for which f(e) is true.""" 
+        assert is_link(s)
+        if s == empty:
+            return s
+        else:
+            kept == keep_if_link(f, rest(s))
+            if f(first(s)):
+                return link(first(s), kept)
+            else:
+                return kept 
+
+>>> keep_if_link(lambda x: x % 2 == 0, four)
+[2, [4, 'empty']]
+
+
+>>> def join_link(s, separator):
+        """Return a string of all elements in s separated by separator."""
+        if s == empty:
+            return ""
+        elif rest(s) == empty:
+            return str(first(s))
+        else:
+            return str(first(s)) + separator + join_link(rest(s), separator)
+
+>>> join_link(four, ", ")
+'1, 2, 3, 4'
+``` 
+<br/>
+
+
+
+##### <u>Recursive construction</u>
+
+Linked lists are particularly useful when constructing sequences incrementally, a situation that arises ofeen in recursive computations.
+
+The `count_partition` function from Chapter 1 counted the number of ways to partition an integer `n` using parts up to size `m` via a tree-recursive process.  With sequences, we can slo enumerate these partitions explicitly using a similar process.
+
+We follow the same recursive analysis of the problem as we did while counting: partitioning `n` using integers up to `m`involves either
+
+1. partitionning `n - m` suing integers up to `m`, or 
+2. partitionning `n` using integers up to `m - 1`.
+
+For base cases:
+
+1. 0 has empty partition
+2. partitioning a negative integer or using parts samller than 1 is impossible.
+
+```python
+>>> def partitions(n, m):
+        """Return a linked list of partitions of n using parts of up to m.
+        Each partition is represented as a linked list."""
+        if n == 0:
+            return link(empty, empty)
+        elif n < 0 or m == 0:
+            return empty 
+        else:
+            using_m = partitions(n-m, m)
+            with_m = apply_to_all_link(lambda s: link(m, s), using_m)
+            without_m = partitions(n, m - 1)
+            return extend_link(with_m, without_m)
+```
+***[Not fully understood] What is the advantage of this method?***
+
+The result is highly nested: a linked list of liked lists, and each linked list is represented as nested pairs that are `list` values.  
+
+We can display it in a human-readable manner using the following code:
+
+```python
+>>> def print_partitions(n, m):
+        lists = partitions(n, m)
+        strings = apply_to_all_link(lambda s: join_link(s, " + "), lists)
+        print(join_link(strings, "\n"))
+
+>>> print_partitions(6, 4)
+4 + 2
+4 + 1 + 1
+3 + 3
+3 + 2 + 1
+3 + 1 + 1 + 1
+2 + 2 + 2
+2 + 2 + 1 + 1
+2 + 1 + 1 + 1 + 1
+1 + 1 + 1 + 1 + 1 + 1
+``` 
+<br/>
+<br/>
+
+---
+
+
+
+
+### 2.4 Mutable Data 
 
 
 
