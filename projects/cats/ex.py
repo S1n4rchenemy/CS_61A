@@ -71,3 +71,31 @@ def pawssible_patches(start, goal, limit):
         "*** YOUR CODE HERE ***"
         return min(add_diff, remove_diff, substitute_diff)
         # END
+
+
+def report_progress(typed, prompt):
+    """Send a report of your id and progress so far to the multiplayer server."""
+    # BEGIN PROBLEM 8
+    "*** YOUR CODE HERE ***"
+    count = 0
+    for i in range(len(typed)):
+        if typed[i] == prompt[i]:
+            count += 1
+        else:
+            break 
+    progress = count / len(prompt)
+    return progress
+
+typed = ['I', 'have', 'begun']
+prompt = ['I', 'have', 'begun', 'to', 'type']
+report_progress(typed, prompt)
+
+
+def time_cal(times_per_player): 
+    def time_diff(s):
+        return [s[i] - s[i-1] for i in range(1, len(s))]
+    times = [time_diff(times_per_player[i]) for i in range(len(times_per_player))]
+    return times 
+
+p = [[1, 4, 6, 7], [0, 4, 6, 9]]
+print(time_cal(p))
