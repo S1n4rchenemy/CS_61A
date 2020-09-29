@@ -633,7 +633,7 @@ Another common sequence processing operation is to select a <u>subset</u> of val
 ``` 
 <br/>
 
-The **general form* of a list comprehension is:
+The *general form* of a list comprehension is:
 
 ```python
 [<map expression> for <name> in <sequence expression> if <filter expression>]
@@ -1449,6 +1449,197 @@ We can display it in a human-readable manner using the following code:
 
 
 ### 2.4 Mutable Data 
+
+We need strategies to help us structure large systems to be *modular*, meaning that they divide naturally into coherent parts that can be separately developed and maintained.
+
+***[Not fully understood]*** One powerful technique for creating modular programs is to incorporate data that may change state over time.  In this way, a single data object can represent something that evolves independently of the rest of the program.  Adding state to data is a central ingredient of a paradigm called <u>*object-oriented programming*</u>.
+<br/>
+
+
+#### 2.4.1 The Object Metaphor 
+
+**Objects** combine data values with behavior.  Objects represent information, but also *behave* like the things that they represent.  The logic of how an boject interacts with other objects is bundled along with the information that encodes the object's value. ***[Not fully understood]*** 
+
+When an object is printed, it knows how to spell itself out in text.  If an object is composed of parts, it knows how to reveal those parts on demand.  Objects are both information and processes, bundled together to represent the properties, interactions, and behaviors of complex things. ***[Not fully understood]*** 
+
+Object behavior is implemented in Python through specialized object syntac and associated terminology.
+<br/>
+
+##### [Example]: <u>date</u> 
+
+A data is a kind of object,
+
+```python
+>>> from datetime import date 
+>>> tues = date(2014, 5, 13)
+``` 
+
+The name `date` is bound to a **class**.  A class represents a kind of value.  Individual dates are called **instances** of that class.  Instances can be *constructed* by calling the class on arguments that characterize the instance. 
+
+```python
+>>> print(date(2014, 5, 19) - tues)
+6 days, 0:00:00
+``` 
+
+While `tues` was constructed from primitive numbers, it behaves like a date.  For instance, subtracting it from another date will give a time difference.
+<br/> 
+
+
+
+Objects have **attributes**, which are named values that are part of the object.  In Python, like many other programming languages, we use *dot notation* to designate an attribute of an object.
+
+> \<expression\> . \<name\>
+
+Above, the `<expression>` evaluates to an object, and `<name>` is the name of an attribute for that object. 
+
+Unlike the names that we have considered so far, these attirbute names are **not** available in the *general environment*.  Instead, arribute names are particular to the object instance preceding the dot.
+
+```python
+>>> tues.year
+2014
+```
+
+Objects also have **methods**, which are function-valued attibutes. The object "knows" how to carry out those methods. $\impliedby$ Methods are functions that compute their results rom both their <u>arguments</u> and their <u>object</u>.
+
+For example, the `strftime` method (a classic function name meant to evoke "string format of time") of `tues` takes a single argument that specifies how to display a date (*e.g.*, `%A` means that the day of the week should be spelled out in full).
+
+```python
+>>> tue.strftime('%A, %B %d')
+'Tuesday, May 13'
+``` 
+
+Computing the return value of `strftime` requires two inputs: 
+
+1. the string that describes the format of the output and 
+2. the date information bundled into `tues`.
+
+Date-specific logic is applied within this method to yield this result.  We never stated that the 13th of May, 2014, was a Tuesday, bu knowing the corresponding weekday is part of what it means to be a date.  By bundling behavior and information together, this Python object offers us a convincing, self-contained abstraction of a date.
+
+Dates are objects, but numbers, strings, lists, and ranges are all objects as well.  They represent values, but also behave in a manner that befits the value they represent.  They also have attributes and methods.  For instance, strings have an array of methods that facilitate text processing. 
+
+```python
+>>> '1234'.isnumeric()
+True 
+>>> 'rOBERT dE nIRO'.swapcase()
+'Robert De Niro'
+>>> 'eyes'.upper().endswitch('YES')
+True 
+``` 
+
+In fact, <u>all values in Python are **objects**.</u>  *i.e.*, all values have behavior and attributes.  They act like the values they represent.
+<br/>
+<br/>
+
+
+
+
+#### 2.4.2 Sequence Objects
+
+Instances of primitive built-in values such as numbers are **immutable**. $\implies$ The values themselves cannot change over the course of program execution.
+
+Lists on the other hand are **mutable**.
+<br/>
+
+Mutable objects are used to represent values that change over time.  
+
+A person is the same person from one day to the next, despite having aged, received a haircut, or otherwise changed in some way.  
+
+Similarly, an object may have changing properties due to *mutating* operations. *e.g.*, it is possible to change the contents of a list.  Most changes are performed by invoking methods on list objects.
+<br/>
+
+
+##### [Example]: <u>history of playing cards</u>
+
+We can introduce many list modification operations through an example that illustrates the history of playing cards.  Comments in the examples describe the effect of each method invocation.
+
+Playing cards were invented in China, perhaps around the 9th century.  An early deck had three suits, which corresponded to denominations of money.
+
+```python
+>>> chinese = ['coin', 'string', 'myrid']  # A list literal
+>>> suits = chinese                        # Two names refer to the same list
+``` 
+
+As cards migrated to Europe (perhaps through Egypt), only the suit of coins remained in Spanish decks (*oro*).
+
+```python
+>>> suits.pop()                            # Remove and return the final element
+'myriad'
+>>> suits.remove('string')                 # Remove the first element that equals the argument
+``` 
+
+Three more suits were added (they evolved in name and design over time),
+
+```python
+>>> suits.append('cup')                    # Add an element to the end
+>>> suits.extend(['sword', 'club'])        # Add all elements of a sequence to the end
+``` 
+
+and Italians called swords *spades*,
+
+```python
+>>> suits[2] = 'spade'                     # Replace an element
+``` 
+
+giving the suits of a traditional Italian deck of cards.
+
+```python
+>>> suits
+['coin', 'cup', 'spade', 'club']
+``` 
+
+The French variant used today in the U.S. changes the first two suits:
+
+```python
+>>> suits[0:2] = ['heart', 'diamond']      # Replace a slice
+>>> suits 
+['heart', 'diamond', 'spade', 'club']
+``` 
+
+Methods also exist for inserting, sorting, and reversing lists.  All of these mutation operations change the value of the list; they do not create new list objects.
+<br/>
+
+
+
+##### <u>Sharing and identity</u>
+
+Because we have been changing a single list rather than creating new lists, the object bound to the name `chinese` has also changed, becuase it is the same list object that was bound to `suits`!
+
+```python
+>>> chinese                                # This name co-refers with "suits' to the same changing list
+['heart', 'diamond', 'spade', 'club']
+``` 
+
+<u>This behavior is new!</u> $\impliedby$ Previously, if a name did not appear in a statement, then its value would not be affected by that statement.
+
+With mutable data, *methods called on one name can affect another name at the same time.*
+
+Could also check the [environment diagram](http://pythontutor.com/composingprograms.html#mode=edit) to see how the value bound to `chinese` is changed by statements involving only `suits`.
+<br/>
+
+Lists can be copied using the `list` constructor function.  Changes to one list do not affect another, unless they share structure.
+
+```python
+>>> nest = list(suits)                     # Bind "nest" to a second list with the same elements
+>>> nest[0] = suits                        # Create a nested list
+``` 
+
+According to this environment,changing the list referenced by `suits` will affect the nested list that is the first element of `nest`, but not the other elements.
+
+```python
+>>> suits.insert(2, 'Joker')               # Insert an element at index 2, shifting the rest
+>>> nest 
+[['heart', 'diamond', 'Joker', 'spade', 'club'], 'diamond', 'spade', 'club']
+``` 
+
+And likewise, undoing this change in the first element of `nest` will change `suit` as well 
+
+```python
+>>> nest[0].pop(2)
+'Joker'
+>>> suits 
+['heart', 'diamond', 'spade', 'club']
+``` 
+
 
 
 
