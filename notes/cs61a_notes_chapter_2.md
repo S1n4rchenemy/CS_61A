@@ -1639,7 +1639,49 @@ And likewise, undoing this change in the first element of `nest` will change `su
 >>> suits 
 ['heart', 'diamond', 'spade', 'club']
 ``` 
+<br/>
 
+Because two lists may have the same contents but in fact be different lists, we require a means to test whether two objects are the same.  Python includes two comparison operators, called `is` and `is not`, that test whether two expressions in fact evaluate to the *identical* object.  Two objects are identical if they are edqual in their current value, **and** any change to one will always be reflected in the other.  **Identity is a stronger condition than equality.** 
+
+```python
+>>> suits is nest[0]
+True 
+>>> suits is ['heart', 'diamond', 'spade', 'club']
+False
+>>> suits == ['heart', 'diamond', 'spade', 'club']
+True 
+``` 
+
+The final two comparisons illustrate the difference between `is` and `==`.  The former checks for identity, while the latter checks for the equality of contents.
+<br/>
+
+
+
+##### <u>List manipualtion</u>
+
+The behavior of list functions and methods can best be understood in terms of object mutation and identity.
+
+* **Slicing** a list creates a new list and leaves the original list *unchanged*.  A slice from the beginning to the end of the list is one way to copy the contents of a list.
+
+  <img src='./assets/2_4_2_fig_1.png' width='' alt='2.4.2 fig. 1' />
+<br/>
+
+* Although the list is copied, the *values contained* within the list are *not*.  Instead, a new list is constructed that contains a subset of the same values as the sliced list.  Therefore, mutating a list within a sliced list will affect the original list.
+  <img src='./assets/2_4_2_fig_2.png' width='' alt='2.4.2 fig. 2' />
+
+  * The built-in function `list` has the same effects as the `s[:]`. *i.e.*, they both can copy the whole list, but the values placed in this list will not be copied.
+<br/>
+
+* Adding two lists together creates a new list that contains the values of the first list, followed by the values in the second list.  Therefore, `a + b` and `b + a` can result in different values for two lists `a` and `b`.
+<br/>
+
+* The `append` method of a list takes one value as an argument and adds it to the end of the list.  
+  <img src='./assets/2_4_2_fig_3.png' width='' alt='2.4.2 fig. 3' />
+  * The argument can be any value, such as a *number* or *another list*.  If the argument is a list, then that list (**and not a copy**) is added as an item in the list. 
+  * The method always returns `None`, and it mutates the list by increasing its length by **one**.
+<br/>
+
+* 
 
 
 
