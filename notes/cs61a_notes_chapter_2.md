@@ -1515,7 +1515,9 @@ Computing the return value of `strftime` requires two inputs:
 
 Date-specific logic is applied within this method to yield this result.  We never stated that the 13th of May, 2014, was a Tuesday, bu knowing the corresponding weekday is part of what it means to be a date.  By bundling behavior and information together, this Python object offers us a convincing, self-contained abstraction of a date.
 
-Dates are objects, but numbers, strings, lists, and ranges are all objects as well.  They represent values, but also behave in a manner that befits the value they represent.  They also have attributes and methods.  For instance, strings have an array of methods that facilitate text processing. 
+Dates are objects, but numbers, strings, lists, and ranges are all objects as well.  They represent values, but also behave in a manner that befits the value they represent.  They also have attributes and methods.  
+
+For instance, *strings* have an array of methods that facilitate text processing. 
 
 ```python
 >>> '1234'.isnumeric()
@@ -1535,7 +1537,7 @@ In fact, <u>all values in Python are **objects**.</u>  *i.e.*, all values have b
 
 #### 2.4.2 Sequence Objects
 
-Instances of primitive built-in values such as numbers are **immutable**. $\implies$ The values themselves cannot change over the course of program execution.
+Instances of primitive built-in values such as <u>numbers</u> are **immutable**. $\implies$ The values themselves cannot change over the course of program execution.
 
 Lists on the other hand are **mutable**.
 <br/>
@@ -1666,22 +1668,292 @@ The behavior of list functions and methods can best be understood in terms of ob
   <img src='./assets/2_4_2_fig_1.png' width='' alt='2.4.2 fig. 1' />
 <br/>
 
+
+* **Slicing assignment** replaces a slice with new values.
+  <img src='./assets/2_4_2_fig_9.png' width='600' alt='2.4.2 fig. 9' />
+  * It can also remove elements rom a list by assigning `[]` to a slice 
+    ```python
+    >>> s = [2, 3]
+    >>> t = [5, 6]
+    >>> s[:1] = []
+    >>> t[0:2] = []
+    >>> s
+    [3]
+    >>> t 
+    []
+    ``` 
+<br/>
+
+* *Interesting example*:
+  <img src='./assets/2_4_2_fig_10.png' width='650' alt='2.4.2 fig. 10' />
+<br/>
+
+
 * Although the list is copied, the *values contained* within the list are *not*.  Instead, a new list is constructed that contains a subset of the same values as the sliced list.  Therefore, mutating a list within a sliced list will affect the original list.
   <img src='./assets/2_4_2_fig_2.png' width='' alt='2.4.2 fig. 2' />
 
   * The built-in function `list` has the same effects as the `s[:]`. *i.e.*, they both can copy the whole list, but the values placed in this list will not be copied.
 <br/>
 
+
 * Adding two lists together creates a new list that contains the values of the first list, followed by the values in the second list.  Therefore, `a + b` and `b + a` can result in different values for two lists `a` and `b`.
 <br/>
 
+
 * The `append` method of a list takes one value as an argument and adds it to the end of the list.  
   <img src='./assets/2_4_2_fig_3.png' width='' alt='2.4.2 fig. 3' />
-  * The argument can be any value, such as a *number* or *another list*.  If the argument is a list, then that list (**and not a copy**) is added as an item in the list. 
+  * The argument can be any value, such as a *number* or *another list*.  If *the argument is a list*, then that list (**and not a copy**) is added as an item in the list. 
   * The method always returns `None`, and it mutates the list by increasing its length by **one**.
 <br/>
 
-* 
+
+* The `extend` method of a list takes an iterable value as an argument and adds each of its elements to the end of the list.  
+  <img src='./assets/2_4_2_fig_4.png' width='' alt='2.4.2 fig. 4' />
+  * It mutates the list by increasing its length by the **length of the iterable argument**.
+  * The statement `x += y` for a list `x` and iterable `y` is equivalent to `x.extend(y)` (*aside from some obscure and minor differences beyond the scope of this text*)
+  * Passing any argument to `extend` that is not iterable will cause a `TypeError`.
+  * The method does **not** return anything.
+<br/>
+
+
+* The `pop` method removes and returns the last element of the list.  When given an integer argument `i`, it removes and returns the element at index `i` of the list.
+  <img src='./assets/2_4_2_fig_5.png' width='' alt='2.4.2 fig. 5' />
+  * The method mutates the list, reducing its length by **one**.
+  * Attempting to pop from an empty list causes an `IndexError` 
+<br/>
+
+
+* The `remove` method takes one argument that must be equal to a value in the list.  It removes the **first** item in the list that is equal to its argument.
+  <img src='./assets/2_4_2_fig_6.png' width='' alt='2.4.2 fig. 6' />
+  * Calling `remove` on a value that is not equal to any item in the list causes a `ValueError`
+<br/>
+
+
+* The `index` method takes one argument that must be equal to a value in the list.  It returns the **index** in the list of the **first** item that is **equal to the argument**.
+  ```python
+  >>> a = [13, 14, 13, 12, [13, 14], 15]
+  >>> a.index([13, 14])
+  4
+  >>> a.index(13)
+  0
+  ``` 
+  * Calling `index` on a value that is not equal to any item in the list causes a `ValueError`.
+<br/>
+
+
+* The `insert` method takes two arguments: **an index** and **a value to be inserted**.  The value is added to the list at the given index.  All elements before the given index stay the same, but all elements after the index have their indices increased by one.
+  <img src='./assets/2_4_2_fig_7.png' width='' alt='2.4.2 fig. 7' />
+  * This method mutates the list by increasing its size by **one**, then returns `None`.
+<br/>
+
+
+* The `count` method of a list takes in an item as an argument and returns **how many times** an equal item appears in the list.  
+  ```python
+  >>> a = [1, [2, 3], 1, [4, 5]]
+  >>> a.count([2, 3])
+  1
+  >>> a.count(1)
+  2
+  >>> a.count(5)
+  0
+  ``` 
+  * If the argument is not equal to any element of the list, then `count` returns 0.
+<br/>
+
+
+
+
+##### <u>List comprehensions</u>
+
+A list comprehension always creates a new list.  
+
+For example, the `unicodedata` module tracks the official names of every character in the Unicode alphabet.  We can look up the characters corresponding to names, including those for card suits.
+
+```python
+>>> from unicodedata import lookup
+>>> [lookup('WHITE ' + s.upper() + ' SUIT') for s in suits]
+['♡', '♢', '♤', '♧']
+``` 
+
+This resulting list **does not** share any of its contents with `suits`, and evaluating the list conprehension does not modify the `suits` list.
+
+(*read more about the Unicode standard for representing text in the [Unicode section](https://diveintopython3.problemsolving.io/strings.html#one-ring-to-rule-them-all) of Dive into Python 3*)
+<br/>
+
+
+
+
+##### <u>Tuples</u>
+
+A tuple, an instance of the built-in type, is an **<u>immutable</u> sequence**.  
+
+Tuples are created using a tuple literal that separates element expressions by **commas**.  Parentheses are *optional* but used commonly in practice.
+
+**Any objects** can be placed within tuples.
+
+*e.g.*,
+```python
+>>> 1, 2 + 3
+(1, 5)
+>>> ("the", 1, ("and", "only"))
+("the", 1, ("and", "only"))
+>>> type( (10, 20) )
+<class 'tuple'>
+``` 
+
+**Empty** and **one-element** tuples have special literal syntax.
+
+```python
+>>> ()          # 0 elements
+()
+>>> (10,)       # 1 element
+(10,)
+``` 
+<br/>
+
+Like lists, tuples have a finite **length** and support **element selection**.  They also have a few methods that are also available for lists, such as `count` and `index`.
+
+*e.g.*,
+```python
+>>> code = ("up", "up", "down", "down") + ("left", "right") * 2
+>>> len(code)
+8
+>>> code[3]
+'down'
+>>> code.count("down")
+2
+>>> code.index("left")
+4
+``` 
+
+However, the methods for manipulating the contents of a list are not available for tuples because tuples are **immutable**.
+
+* But it is possible to change the value of a **mutable element** contained within a tuple.
+  <img src='./assets/2_4_2_fig_8.png' width='' alt='2.4.2 fig. 8' />
+<br/>
+
+Tuples are used implicitly in multiple assignment.  An assignment of two values to two names creats a two-element tuple and then unpacks it.
+
+```python
+>>> a = 1, 2
+>>> a 
+(1, 2)
+>>> type(a)
+<class 'tuple'>
+``` 
+<br/>
+
+
+
+#### 2.4.3 Mutable Default Arguments 
+
+A default argument value is part of a function value, not generated by a call.  Mutable default arguments could be **dangerous**.
+
+<img src='./assets/2_4_2_fig_11.png' width='700' alt='2.4.2 fig. 11' /><br/>
+<br/>
+<br/>
+
+
+
+
+
+#### 2.4.4 Dictionaries
+
+Dictionaries are Python's built-in data type for storing and manipulating correspondence relationships.
+
+A dictionary contains <u>key-value pairs</u>, where both the **keys** and **values** are *objects*.
+
+The purpose of a dictionary is to provide an abstraction for storing and retrieving values that are indexed not by consecutive integers, but by *descriptive keys*.
+
+Strings commonly serve as keys, because strings are our conventional representation for names of things.  An example of the dictionary literal is shown below:
+
+```python
+>>> numerals = {'I': 1.0, 'V': 5, 'X': 10}
+``` 
+
+The **element selection** operation for a dictionary:
+
+```python
+>>> numerals['X']
+10
+``` 
+
+A dictionary can have **at most one value** for each key.  With **assignment statements**, we can 
+
+1. adding new key-value pairs 
+2. changing the existing value for a key 
+
+```python
+>>> numerals['I'] = 1
+>>> numerals['L'] = 50
+>>> numerals 
+{'I': 1, 'X': 10, 'L': 50, 'V': 5}    # result of Python before 3.6
+``` 
+
+* Note that `'L'` was not added to the end of the output above.  Dictionaries were unordered collections of key-value pairs until Python 3.6.  Since Python 3.6, their contents will be **ordered by insertion**.  Since dictionaries were historically unordered collections, it is *safest* **not** to assume anything about the order in which keys and values will be printed.
+<br/>
+
+The environment diagram of a dictionary:
+
+<img src='./assets/2_4_4_fig_1.png' width='' alt='2.4.4 fig. 1' /><br/>
+<br/>
+
+The dictionary type also supports various methods of iterating over the contents of the dictionary as a whole.  The methods `keys`, `values`, and `items` all return iterable values.
+  ```python
+  >>> numerals.keys()
+  dict_keys(['I', 'V', 'X', 'L'])
+  >>> numerals.values()
+  dict_values([1.0, 5, 10, 50])
+  >>> numerals.items()
+  dict_items([('I', 1.0), ('V', 5), ('X', 10), ('L', 50)])
+  
+  >>> sum(numerals.values())
+  66
+  ``` 
+
+A list of key-value pairs can be converted into a dictionary by calling the `dict` constructor function.
+  ```python
+  >>> dict([(3, 9), (4, 16), (5, 25)])
+  {3: 9, 4: 16, 5: 25}
+  ``` 
+
+A useful method implemented by dictionaries is `get`, which returns the value for a key, if the key is present, or a default value.  The argument to `get` are the key and the default value.
+
+```python
+>>> numerals.get('A', 0)
+0
+>>> numerals.get('V', 0)
+5
+``` 
+
+Dictionaries also have a comprehension syntax analogous to those of lists.  A key expression and a value expression are separated by a colon.  Evaluating a dictionary comprehension creates a new dictionary object.
+
+```python
+>>> {x: x * x for x in range(3, 6)}
+{3: 9, 4: 16, 5: 25}
+``` 
+<br/>
+
+
+Dictionaries do have some *restrictions*:
+
+* A key of a dictionary cannot be or contain a mutable value.  *(Tuples are commonly used for keys.)*
+* There can be at most one value for a given key.
+<br/>
+<br/>
+
+
+
+
+
+#### 2.4.5 Local State 
+
+
+
+
+
+
+
 
 
 
