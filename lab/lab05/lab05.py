@@ -155,7 +155,7 @@ def berry_finder(t):
     elif is_leaf(t):
         return False 
     else:
-        return max([berry_finder(x) for x in branches(t)])
+        return max([berry_finder(x) for x in branches(t)])    # return True in [berry_finder(x) for x in branches(t)]
 
 
 def sprout_leaves(t, leaves):
@@ -254,7 +254,7 @@ def coords(fn, seq, lower, upper):
     [[-2, 4], [1, 1], [3, 9]]
     """
     "*** YOUR CODE HERE ***"
-    return [[x, fn(x)] for x in seq if fn(x) >= lower and fn(x) <= upper]
+    return [[x, fn(x)] for x in seq if lower <= fn(x) <= upper]
 
 
 def riffle(deck):
@@ -305,7 +305,23 @@ def add_trees(t1, t2):
         5
       5
     """
-    "*** YOUR CODE HERE ***"
+    "*** YOUR CODE HERE ***"  # standard solution below
+    if not t1:
+        return t2
+    if not t2:
+        return t1
+    new_label = label(t1) + label(t2)
+    t1_children, t2_children = branches(t1), branches(t2)
+    length_t1, length_t2 = len(t1_children), len(t2_children)
+    if length_t1 < length_t2:
+        t1_children += [None for _ in range(length_t1, length_t2)]
+    elif len(t1_children) > len(t2_children):
+        t2_children += [None for _ in range(length_t2, length_t1)]
+    return tree(new_label, [add_trees(child1, child2) for child1, child2 in zip(t1_children, t2_children)])
+    
+
+
+def add_trees_my_bad_solution(t1, t2):
     if (not t1) and t2:
         new_label = label(t2)
     elif t1 and (not t2):
@@ -322,13 +338,12 @@ def add_trees(t1, t2):
         short_branches, long_branches = branches(t2), branches(t1)
 
     for i in range(len(short_branches)):
-        new_branches = new_branches + [add_trees(branches(t1)[i], branches(t2)[i])]
+        new_branches = new_branches + [add_trees_my_bad_solution(branches(t1)[i], branches(t2)[i])]
     for i in range(len(short_branches), len(long_branches)):
         new_branches = new_branches + [long_branches[i]]
 
     return tree(new_label, new_branches)
 
-    
 
 def build_successors_table(tokens):
     """Return a dictionary: keys are words; values are lists of successors.
@@ -369,11 +384,8 @@ def construct_sent(word, table):
     result = ''
     while word not in ['.', '!', '?']:
         "*** YOUR CODE HERE ***"
-        next = random.choice(table[word])
-        if next not in ['.', '!', '?']:
-            return result + word + ' ' + construct_sent(random.choice(table[word]), table)
-        else:
-            return result + word + construct_sent(random.choice(table[word]), table)
+        result += word
+        word = random.choice(table[word])
     return result.strip() + word
 
 def shakespeare_tokens(path='shakespeare.txt', url='http://composingprograms.com/shakespeare.txt'):
