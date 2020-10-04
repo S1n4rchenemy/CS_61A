@@ -1,9 +1,87 @@
+---
+export_on_save:
+  html: true
+html:
+  toc: true
+  offline: true 
+toc:
+  depth_from: 3
+  depth_to: 6
+  ordered: false
+---
+
 # CS 61A Class Notes
 
-**Text book:** 
+<u>**Text book**</u>
+ 
 * [Structure and Interpretation of Computer Programs (SICP)](https://mitpress.mit.edu/sites/default/files/sicp/index.html) 
 * [Composing Programs](http://composingprograms.com/) (Majorly referred in this course)
 * [Dive into Python 3](https://diveintopython3.problemsolving.io/index.html)
+
+---
+<u>**Table of Contents**</u>
+
+<!-- @import "[TOC]" {cmd="toc" depthFrom=1 depthTo=6 orderedList=false} -->
+
+<!-- code_chunk_output -->
+
+- [CS 61A Class Notes](#cs-61a-class-notes)
+  - [Chapter 2: Building Abstractions with Data](#chapter-2-building-abstractions-with-data)
+    - [2.1 Introduction](#21-introduction)
+      - [2.1.1 Native Data Types](#211-native-data-types)
+        - [<u>Floats</u>](#ufloatsu)
+        - [<u>Non-numeric types</u>](#unon-numeric-typesu)
+    - [2.2 Data Abstraction](#22-data-abstraction)
+      - [2.2.1 Example: Rational Numbers](#221-example-rational-numbers)
+      - [2.2.2 Pairs](#222-pairs)
+        - [<u>Representing rational numbers</u>](#urepresenting-rational-numbersu)
+      - [2.2.3 Abstraction Barriers](#223-abstraction-barriers)
+      - [2.2.4 The Properties of Data](#224-the-properties-of-data)
+    - [2.3 Sequences](#23-sequences)
+      - [2.3.1 Lists](#231-lists)
+        - [<u>Containers</u>](#ucontainersu)
+      - [2.3.2 Sequence Iteration](#232-sequence-iteration)
+        - [[Example]: <u>counting how many times a value appears in a sequence</u>](#example-ucounting-how-many-times-a-value-appears-in-a-sequenceu)
+        - [<u>Sequence unpacking</u>](#usequence-unpackingu)
+        - [<u>Ranges</u>](#urangesu)
+      - [2.3.3 Sequence Processing](#233-sequence-processing)
+        - [<u>List comprehension</u>](#ulist-comprehensionu)
+        - [<u>Aggregation</u>](#uaggregationu)
+        - [[Example]: <u>Perfect number</u>](#example-uperfect-numberu)
+        - [[Example]: <u>Minimum perimeter of a rectangle</u>](#example-uminimum-perimeter-of-a-rectangleu)
+        - [<u>High-order functions</u>](#uhigh-order-functionsu)
+        - [<u>Conventional names</u>](#uconventional-namesu)
+      - [2.3.4 Sequence Abstraction](#234-sequence-abstraction)
+        - [<u>Membership</u>](#umembershipu)
+        - [<u>Slicing</u>](#uslicingu)
+      - [2.3.5 Strings](#235-strings)
+        - [<u>Membership</u>](#umembershipu-1)
+        - [<u>Multiline literals</u>](#umultiline-literalsu)
+        - [<u>String coercion</u>](#ustring-coercionu)
+        - [<u>Charactre encodings and Unicode</u>](#ucharactre-encodings-and-unicodeu)
+      - [2.3.6 Trees](#236-trees)
+        - [[Example]: <u>Tree-recursive functions and Fibonacci tree</u>](#example-utree-recursive-functions-and-fibonacci-treeu)
+        - [[Example]: <u>Partition trees</u>](#example-upartition-treesu)
+        - [[Example]: <u>Tree binarization</u>](#example-utree-binarizationu)
+      - [2.3.7 Linked Lists](#237-linked-lists)
+        - [<u>Recursive manipulation</u>](#urecursive-manipulationu)
+        - [<u>Recursive construction</u>](#urecursive-constructionu)
+    - [2.4 Mutable Data](#24-mutable-data)
+      - [2.4.1 The Object Metaphor](#241-the-object-metaphor)
+        - [[Example]: <u>date</u>](#example-udateu)
+      - [2.4.2 Sequence Objects](#242-sequence-objects)
+        - [[Example]: <u>history of playing cards</u>](#example-uhistory-of-playing-cardsu)
+        - [<u>Sharing and identity</u>](#usharing-and-identityu)
+        - [<u>List manipualtion</u>](#ulist-manipualtionu)
+        - [<u>List comprehensions</u>](#ulist-comprehensionsu)
+        - [<u>Tuples</u>](#utuplesu)
+      - [2.4.3 Mutable Default Arguments](#243-mutable-default-arguments)
+      - [2.4.4 Dictionaries](#244-dictionaries)
+      - [2.4.5 Local State](#245-local-state)
+        - [[Example]: <u>withdrawing money</u>](#example-uwithdrawing-moneyu)
+
+<!-- /code_chunk_output -->
+
 
 ---
 
@@ -1669,7 +1747,7 @@ The behavior of list functions and methods can best be understood in terms of ob
 <br/>
 
 
-* **Slicing assignment** replaces a slice with new values.
+* **Slicing assignment** replaces a slice with new values (must be values containing elements, *e.g.*, list, tuple, *.etc*).
   <img src='./assets/2_4_2_fig_9.png' width='600' alt='2.4.2 fig. 9' />
   * It can also remove elements rom a list by assigning `[]` to a slice 
     ```python
@@ -1947,6 +2025,61 @@ Dictionaries do have some *restrictions*:
 
 
 #### 2.4.5 Local State 
+
+Lists and dictionaries have <u>*local state*</u>: they are changing values that have some particular contents at any point in the execution of a program.  The word "state" implies an evolving process in which that state may change.
+<br/>
+
+
+##### [Example]: <u>withdrawing money</u>
+
+*Functions* can also have local state.
+
+In this example, we will create a function `withdraw` taking an amount to be withdrawn as its argument.
+
+* If there is enough money in the account to accommodate the withdrawal, then `withdraw` will return the remaining balance.
+* Otherwise, it will return the message `'Insufficient funds'`.
+
+If we begin with \$100 in the account,
+
+```python
+>>> withdraw(25)
+75
+>>> withdraw(25)
+50
+>>> withdraw(60)
+'Insufficient funds'
+>>> withdraw(15)
+35
+```
+
+Above, the expression `withdraw(25)` evaluated twice, yields different values. $\implies$ this user-defined function is *non-pure*.  
+
+Calling the function not only returns a value, but also has the side effect of changing the function in some way, so that the next call with the same argument will return a different result.  This side effect is a result of `withdraw` making a change to a name-value binding *outside of the current frame*.
+
+For `withdraw` to make sense, it must be created with an initial account balance.
+
+```python
+>>> withdraw = make_withdraw(100)
+``` 
+
+An implementation of `make_withdraw` requires a *new kind of statement*: a `nonlocal` statement.  When we call `make_withdraw`, we bind the name `balance`to the initial amount.  We then define and return a *local function*, `withdraw`, which updates and returns the value of the `balance` when called.
+
+```python
+>>> def make_withdraw(balance):
+        """Return a withdraw funciton that draws down balance with each call."""
+        def withdraw(amount):
+            nonlocal balance 
+            if amount > balance:
+                return 'Insufficient funds'
+            balance = balance - amount
+            return balance 
+        return withdraw 
+``` 
+
+The `nonlocal` statement declares that whenever we cahnge the binding of the name `balance`, the binding is changed in the first frame in which `balance` is already bound.
+
+* Recall that without the `nonlocal` statement, an assignment statement would always bind a name in the first frame of the current environment.
+* The `nonlocal` statement indicates that the name appears somewhere in the environment other than the first (local) frame or the last (global) frame.
 
 
 

@@ -1,9 +1,93 @@
+---
+export_on_save:
+  html: true
+html:
+  toc: true
+  offline: true 
+toc:
+  depth_from: 3
+  depth_to: 6
+  ordered: false
+---
+
 # CS 61A Class Notes
 
-**Text book:** 
+**<u>Text book</u>** 
+
 * [Structure and Interpretation of Computer Programs (SICP)](https://mitpress.mit.edu/sites/default/files/sicp/index.html) 
 * [Composing Programs](http://composingprograms.com/) (Majorly referred in this course)
 * [Dive into Python 3](https://diveintopython3.problemsolving.io/index.html)
+
+---
+<u>**Table of Contents**</u>
+
+<!-- @import "[TOC]" {cmd="toc" depthFrom=1 depthTo=6 orderedList=false} -->
+
+<!-- code_chunk_output -->
+
+- [CS 61A Class Notes](#cs-61a-class-notes)
+  - [Chapter 1: Building Abstractions with Functions](#chapter-1-building-abstractions-with-functions)
+    - [1.1 Getting Started](#11-getting-started)
+      - [Statements & Expressions](#statements--expressions)
+      - [Functions](#functions)
+      - [Objects](#objects)
+      - [Interpreters](#interpreters)
+      - [Errors](#errors)
+    - [1.2 Elements of Programming](#12-elements-of-programming)
+      - [Expressions](#expressions)
+      - [Call Expressions](#call-expressions)
+      - [Importing Library Functions](#importing-library-functions)
+      - [Names and the Environment](#names-and-the-environment)
+      - [Evaluating Nested Expressions](#evaluating-nested-expressions)
+      - [The Non-Pure Print Function](#the-non-pure-print-function)
+    - [1.3 Defining New Functions](#13-defining-new-functions)
+      - [Function Definitions](#function-definitions)
+      - [Environments](#environments)
+      - [Calling User-Defined Functions](#calling-user-defined-functions)
+      - [Example: Calling a User-Defined Function](#example-calling-a-user-defined-function)
+      - [Local Names](#local-names)
+      - [Choosing Names](#choosing-names)
+      - [Functions as Abstractions](#functions-as-abstractions)
+      - [Operators](#operators)
+    - [1.4 Designing Functions](#14-designing-functions)
+      - [Documentation](#documentation)
+      - [Default Argument values](#default-argument-values)
+    - [1.5 Control](#15-control)
+      - [Statements](#statements)
+      - [Compound Statements](#compound-statements)
+      - [Defining Functions II: Local Assignment](#defining-functions-ii-local-assignment)
+      - [Conditional Statements](#conditional-statements)
+      - [Control Expressions](#control-expressions)
+      - [Iteration](#iteration)
+        - [[Example]: <u>Fibonacci numbers</u>](#example-ufibonacci-numbersu)
+      - [Testing](#testing)
+    - [1.6 Higher-Order Functions](#16-higher-order-functions)
+      - [Functions as Arguments](#functions-as-arguments)
+      - [Functions as General Methods](#functions-as-general-methods)
+      - [Defining Functions III: Nested Definitions](#defining-functions-iii-nested-definitions)
+      - [Functions as Returned Values](#functions-as-returned-values)
+      - [How to Draw an Environment Diagram](#how-to-draw-an-environment-diagram)
+      - [Example: Newton's Method](#example-newtons-method)
+      - [Currying](#currying)
+      - [Lambda Expressions](#lambda-expressions)
+      - [Abstractions and First-Class Functions](#abstractions-and-first-class-functions)
+      - [Function Decorators](#function-decorators)
+    - [1.7 Recursive Functions](#17-recursive-functions)
+        - [[Example]: <u>a function that sums the digits of a natural number</u>](#example-ua-function-that-sums-the-digits-of-a-natural-numberu)
+      - [The Anatomy of Recursive Functions](#the-anatomy-of-recursive-functions)
+        - [[Example]: <u>compute n factorial</u>](#example-ucompute-n-factorialu)
+      - [Mutual Recursion](#mutual-recursion)
+        - [[Example]: <u>determine whether a number is even or odd</u>](#example-udetermine-whether-a-number-is-even-or-oddu)
+      - [Printing in Recursive Functionsd](#printing-in-recursive-functionsd)
+        - [[Example]: <u>print all prefixes of a number from largest to smallest to largest</u>](#example-uprint-all-prefixes-of-a-number-from-largest-to-smallest-to-largestu)
+        - [[Example]: <u>pebble game</u>](#example-upebble-gameu)
+      - [Tree Recursion](#tree-recursion)
+        - [[Example]: <u>Fibonacci sequence</u>](#example-ufibonacci-sequenceu)
+        - [[Example]: <u>partitions</u>](#example-upartitionsu)
+      - [Recursion and Iteration](#recursion-and-iteration)
+
+<!-- /code_chunk_output -->
+
 
 ---
 
