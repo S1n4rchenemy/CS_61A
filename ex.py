@@ -72,17 +72,6 @@ def apply_to_all_link(f, s):
     else:
         return link(f(first(s)), apply_to_all_link(f, rest(s)))
 
-def keep_if_link(f, s):
-    """Return a list with elements of s for which f(e) is true.""" 
-    assert is_link(s)
-    if s == empty:
-        return s
-    else:
-        kept == keep_if_link(f, rest(s))
-        if f(first(s)):
-            return link(first(s), kept)
-        else:
-            return kept
 
 def join_link(s, separator):
     """Return a string of all elements in s separated by separator."""
@@ -121,3 +110,25 @@ def getitem_link(s, i):
     while i > 0:
         s, i = rest(s), i - 1
     return first(s)
+
+
+
+# Lecture 16 Review Question (18sp mt2)
+
+def combo(a, b):
+    """Return the smallest integer with all of the digits of a and b (in order).
+
+    >>> combo(531, 432)
+    45312
+    >>> combo(531, 4321)
+    45321
+    >>> combo(1234, 9123)
+    91234
+    >>> combo(0, 321)
+    321
+    """
+    if a == 0 or b == 0:
+        return a + b 
+    elif a % 10 == b % 10:
+        return combo(a // 10, b // 10) * 10 + a % 10 
+    return  min(combo(a // 10, b) * 10 + a % 10, combo(a, b // 10) * 10 + b % 10)

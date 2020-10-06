@@ -327,7 +327,7 @@ This illustration is called an ***expression tree***
 
 We take care of the primitive expression cases by stipulating that:
 * A numeral evaluates to the number it names,
-* A name evaluates to the value associated with that name in the current environment.
+* A name evaluates to the value associated with that name in the **current environment** *(you will see the importance in 2.4.4 Local state section)*.
 <br/>
 
 Notice the important role of an ***environment*** in determining the meaning of the symbols in expressions. In Python, it is meaningless to speak of the value of an expression such as `>>> add(x, 1)` without specifying any information aboutthe environment that would provide a meaning for the name `x` (or even for the name `add`).

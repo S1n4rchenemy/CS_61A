@@ -79,10 +79,14 @@ toc:
       - [2.4.4 Local State](#244-local-state)
         - [[Example]: <u>withdrawing money</u>](#example-uwithdrawing-moneyu)
         - [<u>Python particulars</u>](#upython-particularsu)
+        - [<u>Mutable values \& persistent local state</u>](#umutable-values--persistent-local-stateu)
       - [2.4.5 The Benefits of Non-Local Assignment](#245-the-benefits-of-non-local-assignment)
       - [2.4.6 The Cost of Non-Local Assignment](#246-the-cost-of-non-local-assignment)
         - [<u>Sameness and change</u>](#usameness-and-changeu)
       - [2.4.7 Iterators](#247-iterators)
+      - [2.4.8 Iterables](#248-iterables)
+      - [2.4.9 Built-in Iterators](#249-built-in-iterators)
+      - [2.4.10 Generators](#2410-generators)
       - [2.4.14 Mutable Default Arguments](#2414-mutable-default-arguments)
 
 <!-- /code_chunk_output -->
@@ -1794,6 +1798,7 @@ The behavior of list functions and methods can best be understood in terms of ob
   <img src='./assets/2_4_2_fig_4.png' width='' alt='2.4.2 fig. 4' />
   * It mutates the list by increasing its length by the **length of the iterable argument**.
   * The statement `x += y` for a list `x` and iterable `y` is equivalent to `x.extend(y)` (*aside from some obscure and minor differences beyond the scope of this text*)
+    * Usually avoid using this expression.
   * Passing any argument to `extend` that is not iterable will cause a `TypeError`.
   * The method does **not** return anything.
 <br/>
@@ -2093,6 +2098,8 @@ Run the example in [Python tutor](http://pythontutor.com/composingprograms.html#
 * The `nonlocal` statement changes all of the remaining assignment statements in the definition of `withdraw`:
   > *After executing `nonlocal balance`, any assignment statement with `balance` on the left-hand side of `=` will not bind `balance` in the **first frame of the current environment**.  Instead, it will find the **first frame where `balance` was already defined** and re-bind the name in the frame.*
   * If `balance` has not previously been bound to a value, then the `nonlocal`statement will give an error.
+  * If `balance` has also been bound in the **local frame**, the `nonlocal` statement will also give an error.
+  * To better figure out the subtlety, recall the *evaluation rule* of the assignment statement *(see section "Evaluating nested expression")*.
 <br/>
 
 * By virtue of changing the binding for `balance`, we have changed the `withdraw` function as well.  The next time it is called, the name `balance` will evaluate to 15 instead of 20.
@@ -2103,7 +2110,9 @@ Run the example in [Python tutor](http://pythontutor.com/composingprograms.html#
 
 <br/>
 
-By introducint `nonlocal` statements, we have created a dual role for assignment statements.  Either they change **local bindings**, or they change **non-local bindings**.  In fact, assignment statements already had many roles, *e.g.*, creating new binding, re-binding existing names, changing lists and dictionaries, *.etc*.  It is *up to you* as a programmer to document your code cleary so that the effects of assignment can be understood by others.
+By introducing `nonlocal` statements, we have created a dual role for assignment statements.  Either they change **local bindings**, or they change **non-local bindings**.  In fact, assignment statements already had many roles, *e.g.*, creating new binding, re-binding existing names, changing lists and dictionaries, *.etc*.  It is *up to you* as a programmer to document your code cleary so that the effects of assignment can be understood by others.
+
+<img src='./assets/Lec_16_png_Page10.png' width='700' alt='Lecture 16 slide 10' /><br/>
 <br/>
 
 
@@ -2125,6 +2134,30 @@ The `UnboundLocalError` appears because `balance` is *assigned locally* in line 
 * In this case, Python's pre-processing restricted the frame in which `balance` could appear, and thus prevented the name from being found.
 * Adding a `nonlocal` statement corrects this error 
 * The `nonlocal` statement did not exist in Python 2
+<br/>
+
+
+
+##### <u>Mutable values \& persistent local state</u>
+
+**Mutable values** can be changed *without* a `nonlocal` statement.
+
+```python
+>>> def make_withdraw_list(balance):
+        b = [balance]                           # Name bound outside of withdraw def
+        def withdraw(amount):
+            if amount > b[0]:
+                return 'Insufficient funds'
+            b[0] = b[0] - amount                # Element assignment changes a list 
+            return b[0]
+        return withdraw
+
+>>> withdraw = make_withdraw_list(100)
+>>> withdraw(25)
+``` 
+
+Because list is mutable, we do **not** need to change what `b` is bound to, or what `balance` is bound to; instead, we just change the mutable value of the list.  Therefore, we do not need the `nonlocal` statement.
+
 <br/>
 <br/>
 
@@ -2187,11 +2220,46 @@ These subtleties arise because, by introducint non-pure functions that change th
 
 An expression that contains only pure function calls is <u>*referentially transparent*</u>; its value does **not** change if we substitute one of its subexrepssion with the value of that subexrepssion.
 
-**Re-binding** operations violate the conditions of referentially transparency because they do more than returning a value; they *change the environment*.  When we introduce arbitary re-binding, we encounter a thorny epistemological issue:
+*e.g.*,
+```python
+>>> mul(add(2, mul(4, 6)), add(3, 5)) = mul(add(2, 24), add(3, 5))
+```
+<br/>
+
+**Re-binding** operations violate the conditions of referentially transparency because they do more than returning a value; they <u>*change the environment*</u>.  When we introduce arbitary re-binding, we encounter a thorny epistemological issue:
 
 > *What it means for two values to be the same.*
 
 In our environment model of computation, two separately defined functions are not the same, because changes to one may not be reflected in the other.
+
+> For example, let's define a function
+> ```python
+> >>> def f(x):
+>         x = 4
+>         def g(y):
+>             def h(z):
+>                 nonlocal x
+>                 x = x + 1
+>                 return x + y + z
+>             return h
+>         return g
+> >>> a = f(1)
+> >>> b = a(2)
+> ``` 
+> Now, evaluate the expression 
+> ```python
+> >>> total = b(3) + b(4)
+> 22
+> ``` 
+> If we roll back to the time point before this expression, and evaluate another expression 
+> ```python
+> >>> total = 10 + b(4)         # b(3) = 10 at this very time point
+> 21
+> ```    
+> The difference comes from the lost of the referentially transparency.
+
+<br/> 
+
 
 In general, so long as we never modify data objects, we can regard a compound data object to be precisely the totality of its pieces.  But this view is no longer valid in the presence of **change**, where a compound data object has an "identity" that is something different from the pieces of which it is composed.  
 * A bank account is still "the same" bank account even if we change the valance by making a withdrawal; conversely, we could have two bank accounts that happed to have the same balance, but are different objects.
@@ -2208,7 +2276,212 @@ Moreover, using funcitons with local state, we are able to implement mutable dat
 
 #### 2.4.7 Iterators 
 
+Python and many other programming languages provide a unified way to process elements of a container value sequentially, called an <u>*iterator*</u>.
 
+> *An iterator is an object that provides sequential access to values, one by one.*
+
+The iterator has two components:
+
+1. a mechanism for retrieving the next element in the sequence being processed, and
+2. a mechanism for signaling that the end of the sequence has been reached and no further elements remain.
+
+For any container, such as a list or range, an iterator can be obtained by calling the built-in `iter` function.  The contents of the iterator can be accessed by calling the built-in `next` function.
+
+*e.g.*,
+```python
+>>> primes = [2, 3, 5, 7]
+>>> type(primes)
+<class 'list'>
+>>> iterator = iter(primes)
+>>> type(iterator)
+<class 'list iterator'>
+>>> next(iterator)
+2
+>>> next(iterator)
+3
+>>> next(iterator)
+5
+``` 
+
+Python signals that there are no more values available by raising a `StopIteration` exception when `next` is called.  This exception can be handled using a `try` statement **[How?]**.
+
+```python
+>>> next(iterator)
+7
+>>> next(iterator)
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+StopIteration
+```
+<br/>
+
+
+
+An iterator maintains **local state** to represent its position in a sequence.  Each time `next` is called, that position advances.  
+
+* Two separate iterators can track two different positions in the same sequence.  
+* Two names for the same iterator will *share* a position.
+
+*e.g.*,
+```python
+>>> r = range(3, 13)
+>>> s = iter(r)         # 1st iterator over r
+>>> next(s)
+3
+>>> next(s)
+4
+>>> t = iter(r)         # 2nd iterator over r
+>>> next(t)
+3
+>>> next(t)
+4
+>>> u = t               # alternate name for the 2nd iterator
+>>> next(u)
+5
+>>> next(u)
+6
+``` 
+
+Advancing the second iterator does not affect the first.  
+
+```python
+>>> next(s)
+5 
+>>> next(t)
+7
+``` 
+
+Calling `iter` on an iterator will return that iterator, **not a coay**.  This behavior is included in Python so that a programmer can call `iter` on a value to get an iterator without having to worry about whether it is an iterator or a container. 
+
+```python
+>>> v = iter(t)         # Another alternate name for the second iterator
+>>> next(v)
+8 
+>>> next(u)
+9
+>>> next(t)
+10
+``` 
+<br/>
+
+
+
+The **usefulness** of iterators is derived from the fact that the underlying series of data for an iterator may not be represented explicitly in memory.  An iterator provides a mechanism for considering each of a series of values in turn, but all of those elements do not need to be stored simultaneously.  Instead, when the next element is requested from an iterator, that element may be computed on demand instead of being retrieved from an existing memory source.
+
+Ranges are able to compute the elements of a sequence lazily because the sequence represented is *uniform*, and any element is easy to compute form the starting and ending bounds of the range.  Iterators allow for lazy generation of a much broader class of underlying series.  Instead, iterators are only required to compute the next element of the series, in order, each time another element is requested.
+
+While not as flexible as *random access* (accessing arbitary elements of a sequence in any order), *sequential access* to sequential data is often sufficient for data processing applications.
+<br/>
+<br/>
+
+
+
+
+
+#### 2.4.8 Iterables 
+
+Any value that can produce iterators is called an <u>*iterable*</u> value.  
+
+In Python, an iterable value is anything that can be passed to the built-in `inter` function.  
+
+* Sequence values, *e.g.*, strings, tuples, 
+* Other containers, *e.g.*,  sets, dictionaries.
+* *Iterators* (because they can also be passed to the `inter` function)
+
+Unordering collections, such as dictionaries in Python 3.5 and earlier, must define an ordering over their contents when they produce iterators.
+
+> Dictionaries and sets are unordered because the programmer has no control over the order of iteration, but Python does guarantee certain properties about their order in its specification.
+
+*e.g.*,
+```python
+>>> d = {'one': 1, 'two': 2, 'three': 3}
+>>> d
+{'one': 1, 'three': 3, 'two': 2}
+>>> k = iter(d)
+>>> next(k)
+'one'
+>>> next(k)
+'three'
+>>> v = iter(d.values())
+>>> next(v)
+1
+>>> next(v)
+3
+``` 
+
+If a dictionary changes in structure because a key is added or removed, then all iterators become *invalid*, and future iterators may exhibit changes to the order of their contents.
+
+On the other hand, changing the value of an existing key does not invalidate iterators or change the order of their contents.
+
+```python
+>>> d.pop('two')
+2
+>>> next(k)
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+RuntimeError: dictionary changed size during iteration
+``` 
+
+A `for` statement can be used to iterate over the contents of any iterable or iterator.
+
+```python
+>>> r = range(3, 6)
+>>> s = iter(t)
+>>> next(s)
+3
+>>> for x in s:
+        print(x)
+4
+5
+>>> list(s)
+[]
+>>> for x in r:
+        print(x)
+3
+4
+5
+``` 
+<br/>
+<br/>
+
+
+
+
+#### 2.4.9 Built-in Iterators 
+
+Several built-in functions take as arguments iterable values and return iterators.  These functions are used extensively for lazy sequence processing.
+
+The `map` function is lazy: calling it does not perform the computation required to compute elements of its result.  Instead, an iterator object is created that can return results if queried using `next`.
+
+*e.g.*,
+```python
+>>> def double_and_print(x):
+        print('***', x, '=>', 2*x, '***')
+        return 2*x
+>>> s = range(3, 7)
+>>> doubled = map(double_and_print, s)       # double_and_print not yet called
+>>> next(doubled)                            # double_and_print called once
+*** 3 => 6 ***
+6
+>>> next(doubled)
+*** 4 => 8 ***
+8
+>>> list(doubled)
+*** 5 => 10 ***
+*** 6 => 12 ***
+[10, 12]
+``` 
+
+The `filter` function returns an iterator over a subset of the values in another iterable.
+
+The `zip` function returns an iterator over tuples of values that combine one value from each of multiple iterables.
+<br/>
+<br/>
+
+
+
+
+#### 2.4.10 Generators
 
 
 <br/>
