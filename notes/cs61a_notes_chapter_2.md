@@ -19,7 +19,9 @@ toc:
 * [Dive into Python 3](https://diveintopython3.problemsolving.io/index.html)
 
 ---
+
 <u>**Table of Contents**</u>
+
 
 <!-- @import "[TOC]" {cmd="toc" depthFrom=1 depthTo=6 orderedList=false} -->
 
@@ -87,9 +89,23 @@ toc:
       - [2.4.8 Iterables](#248-iterables)
       - [2.4.9 Built-in Iterators](#249-built-in-iterators)
       - [2.4.10 Generators](#2410-generators)
+        - [<u>Generators & Iterators</u>](#ugenerators--iteratorsu)
+      - [2.4.11 Implementing Lists and Dictionaries](#2411-implementing-lists-and-dictionaries)
       - [2.4.14 Mutable Default Arguments](#2414-mutable-default-arguments)
+    - [2.5 Object-Oriented Programming](#25-object-oriented-programming)
+      - [2.5.1 Objects and Classes](#251-objects-and-classes)
+        - [[Example]: <u>bank account</u>](#example-ubank-accountu)
+      - [2.5.2 Defining Classes](#252-defining-classes)
+        - [<u>Identity</u>](#uidentityu)
+        - [<u>Methods</u>](#umethodsu)
+      - [2.5.3 Message Passing and Dot Expressions](#253-message-passing-and-dot-expressions)
+        - [<u>Dot expressions</u>](#udot-expressionsu)
+        - [<u>Methods and functions</u>](#umethods-and-functionsu)
+        - [<u>Naming conventions</u>](#unaming-conventionsu)
+      - [2.5.4 Class Attributes](#254-class-attributes)
 
 <!-- /code_chunk_output -->
+
 
 
 ---
@@ -2351,7 +2367,7 @@ Advancing the second iterator does not affect the first.
 7
 ``` 
 
-Calling `iter` on an iterator will return that iterator, **not a coay**.  This behavior is included in Python so that a programmer can call `iter` on a value to get an iterator without having to worry about whether it is an iterator or a container. 
+Calling `iter` on an iterator will return that iterator, **not a copy**.  This behavior is included in Python so that a programmer can call `iter` on a value to get an iterator without having to worry about whether it is an iterator or a container. 
 
 ```python
 >>> v = iter(t)         # Another alternate name for the second iterator
@@ -2483,6 +2499,121 @@ The `zip` function returns an iterator over tuples of values that combine one va
 
 #### 2.4.10 Generators
 
+Generators allow us to define iterations over arbitary sequences, even *infinite* sequence, by leveraging the features of the Python interpreter.
+
+A generator is an iterator returned by a special class of function called a <u>*generator function*</u>. 
+
+* <u>Regular functions</u>: use `return` statement 
+* <u>Generator functions</u>: use `yield` statements to return elements of a series.
+
+Generators do not use attributes of an object to track their progress through a series.  Instead, they control the execution of the generator function, which runs until the next `yield` statement is executed each time `next` is called on the generator.
+
+*e.g.*,
+```python
+>>> def letters_generator():
+        current = 'a'
+        while current <= 'd'
+            yield current
+            current = chr(ord(current) + 1)
+
+>>> for letter in letters_generator():
+        print(letter)
+a
+b
+c
+d
+``` 
+
+When called, a generator function doesn't return a particular yielded value, but instead a `generator` (which is a type of iterator) that itself return the yielded values.  Calling `next` on the generator continues execution of the generator function from wherever it left off previously until another `yield` statement is executed.
+
+1. The first time `next` is called, the program executes statements from the body of the `letters_generator` function until it encounters the `yield` statement.
+
+2. Then, it **pauses** and **returns** the value of `current`.  `yield` statements do not destroy the newly created environment; they **preserve** it for later.
+
+3. When `next` is called again, execution resumes where it left off.  The values of `current` and of any other bound names in the scope of `letters_generator` are preserved across subsequent calls to `next`.
+  
+We can walk through the generator by manually calling `next()`:
+
+```python
+>>> letters = letters_generator()
+>>> type(letters)
+<class 'generator'>
+>>> next(letters)
+'a'
+>>> next(letters)
+'b'
+>>> next(letters)
+'c'
+>>> next(letters)
+'d'
+>>> next(letters)
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+StopIteration
+``` 
+
+The generator does not start executing any of the body statements of its generator function until the first time `next` is called.  The generator raises a `StopIteration` exception whenever its generator function returns.
+<br/>
+
+
+##### <u>Generators & Iterators</u>
+
+Generators often process iterators.  Since Python 3.3, there has been a `yield from` statement which yields all values from an iterator or iterable.
+
+For example, if we want to implement a function as below:
+
+```python
+>>> list(a_then_b([3, 4], [5, 6]))
+[3, 4, 5, 6]
+``` 
+
+There are two *equivalent* implementations.  One is like
+
+```python
+>>> def a_then_b(a, b):
+        for x in a:
+            yield x
+        for x in b:
+            yield x
+```
+
+Or we can make use of the `yield from` statement,
+
+```python
+>>> def a_then_b(a, b):
+        yield from a
+        yield from b
+``` 
+<br/>
+
+For another instance, let's see how the `yield from` statement is used in recursion scenarios.
+
+```python
+>>> def prefixes(s):
+        if s:
+            yield from prefixes(s[:-1])
+            yield s
+
+>>> def substrings(s):
+        if s:
+            yield from prefixes(s)
+            yield from substrings(s[1:])
+
+>>> list(prefixes('both'))
+['b', 'bo', 'bot', 'both']
+
+>>> list(substrings('tops'))
+['t', 'to', 'top', 'tops', 'o', 'op', 'ops', 'p', 'ps', 's']
+``` 
+
+<br/>
+<br/>
+
+
+
+
+#### 2.4.11 Implementing Lists and Dictionaries
+
 
 <br/>
 <br/>
@@ -2496,3 +2627,336 @@ A default argument value is part of a function value, not generated by a call.  
 <img src='./assets/2_4_2_fig_11.png' width='700' alt='2.4.2 fig. 11' /><br/>
 <br/>
 <br/>
+<br/>
+
+---
+
+
+
+
+
+### 2.5 Object-Oriented Programming 
+
+***Object-oriented programming (OOP)*** is a method for organizing programs that brings together many of the ideas introduced in this chapter.
+
+* Functions in data abstraction $\implies$ **Classes** create abstraction barriers between the use and implementation of data.
+* Dispatch dictionaries $\implies$ **Objects** respond to behavioral requests.
+* Mutable data structures $\implies$ **Objects** have local state that is not directly accessible from the global environment.
+
+The object system offers more than just convenience.  It enables a new metaphor for designing programs in which several independent agents interact within the computer.
+
+* Each object bundles together local state and behavior in a way that abstracts the complexity of both.
+* Objects *communicate* with each other, and useful results are computed as a consequence of their interaction.
+* Not only do objects *pass messages*, they also *share behavior* among other objects of the same type and inherit characteristics from related types.
+
+The paradigm of OOP has its own vocabulary that supports the object metaphor.
+
+* An object is a data value that has **methods** and **attributes**, accessible via dot notation.
+* Every object has a type, called its **class**.  To create new types of data, we implement new classes.
+<br/>
+<br/>
+
+
+
+#### 2.5.1 Objects and Classes 
+
+A class serves as a *template* for all objects whose type is that class.  Every object is an *instance* of some particular class.
+
+The objects we have used so far all have built-in classes, but new user-defined classes can be created as well.
+
+A <u>class definition</u> specifies the **attributes** and **methods** *shared* among objects of that class.  Next we will introduce the <u>class statement</u> by revisiting the example of bank account.
+<br/>
+
+
+##### [Example]: <u>bank account</u>
+
+* We already konw that bank accounts are natually modeled as mutable values that have a `balance`.
+
+* A bank account object should also have a `withdraw` method that updates the account balance and returns the requested amount.
+
+* A bank account should be able to return its current `balance`, return the name of the account `holder`, and an amount for `deposit`.
+
+An `Account` *class* allows us to create multiple instances of bank accounts.  The act of creating a new object is known as <u>*instantiating*</u> the class.  The syntax in Python for instantiating a class is identical to the syntax of calling a function.  In this case, we call `Account` with the argument `'Kirk'`, the account holder's name.
+
+```python
+>>> a = Account('Kirk')
+``` 
+
+An **attribute** of an object is a *name-value pair* associated with the object, which is accessible via dot notation.  The attributes specific to a particular object, as opposed to all objects of a class, are called <u>*instance attributes*</u>, (*e.g.*, Each `Account` has its own balance and account holder name). 
+
+In the broader programming community, instance attributes may also be called *fields*, *properties*, or *instance variables*.
+
+```python
+>>> a.holder
+'Kirk'
+>>> a.balance
+0
+``` 
+
+Functions that operate on the object or perform object-specific computations are called **methods**.  The return values and side effects of a method can depend upon and change other attributes of the object.  
+
+*e.g.*, `deposit` is a method of our `Account` object `a`.  It takes one argument, the amount to deposit, changes the `balance` attribute of the object, and returns the resulting balance.
+
+```python
+>>> a.deposit(15)
+15
+``` 
+
+Methods are *invoked* on a particular object.  As a result of invoking the `withdraw` method, either the withdrawal is approved and the amount is deducted, or the reqeust is declined and the method returns an error message.
+
+```python
+>>> a.withdraw(10)    # The withdraw method returns the balance after withdrawal
+5
+>>> a.balance         # The balance attribute has changed
+5
+>>> a.withdraw(10)
+'Insufficient funds'
+``` 
+
+As illustrated above, the behavior of a method can depend upon the changing attributes of the object.  Two calls to `withdraw` with the same argument return different results.
+<br/>
+<br/>
+
+
+
+#### 2.5.2 Defining Classes 
+
+User defined classes are created by `class` statements, which consists of a single clause.  A class statement defines the calss name, then includes a suite of statements to define the attributes of the class:
+
+```python
+class <name>:
+    <suite>
+``` 
+
+When a class statement is executed, 
+
+1. A new class is created and bound to `<name>` in the *first frame* of the current environment.  
+2. The suite is then executed 
+
+Any names bound within the `<suite>` of a `class` statement, through `def` or assignment statements, create or modify attributes of the class.
+
+Classes are typically organized around manipulating instance attributes, which are the name-value pairs associated with each instance of that class.  The class specifies the instance attributes of its objects by defining a method for initializing new objects.
+
+*e.g.*, part of initializing an object of the `Account` class is to assign it a starting balance of 0.
+<br/>
+
+
+The `<suite>` of a `class` statement contains `def` statements that define new methods for objects of that class.  The method that *initializes* objects has a special name in Python, `__init__` (two underscores on each side of the word "init"), and is called the **constructor** for the class.
+
+```python
+>>> class Account:
+        def __init__(self, account_holder):
+            self.balance = 0
+            self.holder = account_holder 
+``` 
+
+The `__init__` method for `Account` has two formal parameters:
+
+* `self`, is bound to the newly created `Account` object.
+* `account_holder`, is bound to the argument passed to the class when it is called to be instantiated.
+
+The constructor binds the instance attribute name `balance` to 0.  It also binds the attribute name `holder` to the value of the name `account_holder`.  The formal parameter `account_holder` is a *local* name in the `__init__` method.  On the other hand, the name holder that is bound via the final assignment statement persists, because it is stored as an attribute of `self` using dot notation.
+<br/>
+
+
+Having defined the `Account` class, we can instantiate it:
+
+```python
+>>> a = Account('Kirk')
+``` 
+
+This "call" to the `Account` class creates a new object that is an instance of `Account`, then calls the constructor function `__init__` with two arguments: the newly created object and the string `'Kirk'`.  By convention, we use the parameter name `self` for the first argument of a constructor, because it is bound to the object being instantiated.  (This convention is adopted in virtually all Python code.)
+
+Now, we can access the object's `balance` and `holder` using dot notation.
+
+```python
+>>> a.balance 
+0
+>>> a.holder 
+'Kirk'
+``` 
+<br/>
+
+
+##### <u>Identity</u>
+
+Each new account instance has its own balance attribute, the value of which is independent of other objects of the same class
+
+```python
+>>> b = Account('Spock')
+>>> b.balance = 200
+>>> [acc.balance for acc in (a, b)]
+[0, 200]
+``` 
+
+To enforce this separation, every object that is an instance of a user-defined class has a unique identity.  Object identity is compared using the `is` and `is not` operators.
+
+```python
+>>> a is a
+True
+>>> a is not b
+True
+``` 
+
+Despite being constructed from identical calls, the objects bound to `a` and `b` are not the same.  As usual, binding an object to a new name using assignment does not create a new object.
+
+```python
+>>> c = a
+>>> c is a 
+True
+```
+
+New objects that have user-defined classes are only created when a class (such as `Account`) is instantiated with call expression syntax.
+<br/>
+
+
+
+##### <u>Methods</u>
+
+Object methods are also defined by a `def` statement in the suite of a `class` statement.  Below, `deposit` and `withdraw` are both defined as methods on objects of the `Account` class.
+
+```python
+>>> class Account:
+        def __init__(self, account_holder):
+            self.balance = 0
+            self.holder = account_holder
+        def deposit(self, amount):
+            self.balance = self.balance + amount
+            return self.balance 
+        def withdraw(self, amount):
+            if amount > self.balance:
+                return 'Insufficient funds'
+            self.balance = self.balance - amount
+            return self.balance
+``` 
+
+While method definitions do not differ from functions in how they are declared, method definitions fo have a different effect when executed:
+
+* The funciton value that is created by a `def` statement within a `class` statement is bound to the declared name, but bound *locally* within the class as an attribute.
+* That value is invoked as a method using dot notation from an instance of the class.
+
+
+Each method definition again includes a special first parameter `self`, which is bound to the object on which the method is invoked.
+
+* *e.g.*, when the method `deposit` is invoked on a particular `Account` object and passed a single argument value: the amount deposited.  The object itself is bound to `self`, while the argument is bound to `amount`.
+* All invoked methods have access to the object via the `self` parameter, and so they can all access and manipualte the object's state.
+<br/>
+
+
+To invoke these methods, we again use dot notation, 
+
+```python
+>>> spock_account = Account('Spock')
+>>> spock_account.deposit(100)
+100
+>>> spock_account.withdraw(90)
+10
+>>> spock_account.withdraw(90)
+'Insufficient funds'
+>>> spock_account.holder
+'Spock'
+```
+
+The object itself (bound to `spoke_account`, in this case) plays a *dual role*.
+
+1. It determines waht the name `withdraw` means; `withdraw` is not a name in the environment, but instead a name that is local to the `Account` class.
+2. It is bound to the first parameter `self` when the `withdraw` method is invoked.
+<br/>
+<br/>
+
+
+
+
+#### 2.5.3 Message Passing and Dot Expressions 
+
+... [text not fully understood]
+
+##### <u>Dot expressions</u>
+
+The code fragment `spock_account.deposit` is called a *dot expression*.  A dot expression consists of an expression, a dot, and a name:
+
+```python
+<expression> . <name>
+``` 
+
+The `<expression>` can be any valid Python expression, but the `<name>` must be a simple name (not an expression that evaluates to a name).  A dot expression evaluates to the value of the attribute with the given `<name>`, for the object that is the value of the `<expression>`.
+
+The built-in function `getattr` also returns an attribute for an object by name.  It is the funciton equivalent of dot notation.  Using `getattr`, we can look up an attribute using a string, just as we did with a dispatch dictionary.
+
+```python
+>>> getattr(spoke_account, 'balance')
+10
+``` 
+
+We can also test whether an object has a named attribute with `hasattr`.
+
+```py
+>>> hasattr(spoke_account, 'diposit')
+True 
+``` 
+
+The attributes of an object include all of its instance attributes, along with all of the attributes (including methods) defined in its class.  Methods are attributes of the class that require special handling.
+<br/>
+
+
+##### <u>Methods and functions</u>
+
+We already learnt, when a method is invoked on an object:
+
+the object ($\Longleftrightarrow$ `<expression>` to the left of the dot) is passed automatically as the *first argument* to the method ($\Longleftrightarrow$ bound to the `<name>` on the right side of the dot).
+
+$\implies$ the object is bound the parameter `self`.
+
+
+To achieve automatic `self` binding, Python distinguishes between *functions*, which we have been creating since the beginning of the text, and *bound methods*, which couple together a function and the object on which that method will be invoked.
+
+> A bound method value is already associated with its first argument, the instance on which it was invoked, which will be named `self` when the method is called.
+
+<br/>
+
+We can see the difference in the interactive interpreter by calling `type` on the returned values of the dot expressions.
+
+```python
+>>> type(Account.deposit)
+<class 'function'>
+>>> type(spock_account.deposit)
+<class 'method'>
+``` 
+
+These two results differ only in the fact that 
+
+* the first is a standard two-argument function with parameters `self` and `amount`;
+* the second is a one-argument method, where the `self` will be bound to the object `spock_account` automatically when the method is called.
+
+Both of these values, whether function values or bound method values, are associated with the same `deposit` function body.
+<br/>
+
+We can call `deposit` in two ways: as a function and as a bound method:
+
+```python
+>>> Account.deposit(spock_account, 1001)  # The deposit function takes 2 arguments
+1011
+>>> spock_account.deposit(1000)           # The deposit method takes 1 argument
+2011
+``` 
+
+The function `getattr` behaves exactly like dot notation: if its first argument is an object but the name is a method defined in the class, then `getattr` returns a bound method value.  On the other hand, if the first argument is a class, then `getattr` returns the attribute value directly, which is a plain function.
+<br/>
+
+
+##### <u>Naming conventions</u>
+
+<u>Class names</u> are conventionally written using the **CapWords** convention (also called **CamelCase** because the capital letters in the middle of a name look like humps).
+
+<u>Method names</u> follow the standard convention of naming functions using *lowercased words separated by underscores*.
+
+In some cases, there are instance variables and methods that are related to the maintenance and consistency of an object that we won't want users of the object to see or use.  They are not part of the abstraction defined by a class, but instead part of the implementation.  Python's convention dictates that if an attribute name starts with an *underscore*, it should only be accessed within methods of the class itself, rather than by users of the class.
+<br/>
+<br/>
+
+
+
+
+#### 2.5.4 Class Attributes 
+
+
