@@ -48,6 +48,17 @@ def make_fib():
     True
     """
     "*** YOUR CODE HERE ***"
+    curr, nex = 0, 1
+    def fib():
+        nonlocal curr, nex 
+        result = curr
+        curr, nex = nex, curr + nex 
+        return result
+    return fib
+
+
+
+def make_fib_my_bad_solution():
     fib_term_prev = 0       # looking for better solution
     fib_term = 0
     def fib():
