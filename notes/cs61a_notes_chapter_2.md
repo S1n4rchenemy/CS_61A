@@ -103,6 +103,13 @@ toc:
         - [<u>Methods and functions</u>](#umethods-and-functionsu)
         - [<u>Naming conventions</u>](#unaming-conventionsu)
       - [2.5.4 Class Attributes](#254-class-attributes)
+        - [<u>Attribute names</u>](#uattribute-namesu)
+        - [<u>Attribute assignment</u>](#uattribute-assignmentu)
+      - [2.5.5 Inheritance](#255-inheritance)
+      - [2.5.6 Using Inheritance](#256-using-inheritance)
+        - [<u>Calling ancestors</u>](#ucalling-ancestorsu)
+        - [<u>Interfaces</u>](#uinterfacesu)
+      - [2.5.7 Multiple Inheritance](#257-multiple-inheritance)
 
 <!-- /code_chunk_output -->
 
@@ -2676,7 +2683,7 @@ A <u>class definition</u> specifies the **attributes** and **methods** *shared* 
 
 * A bank account should be able to return its current `balance`, return the name of the account `holder`, and an amount for `deposit`.
 
-An `Account` *class* allows us to create multiple instances of bank accounts.  The act of creating a new object is known as <u>*instantiating*</u> the class.  The syntax in Python for instantiating a class is identical to the syntax of calling a function.  In this case, we call `Account` with the argument `'Kirk'`, the account holder's name.
+An `Account` *class* allows us to create multiple instances of bank accounts.  The act of creating a new object is known as ***instantiating*** the class.  The syntax in Python for instantiating a class is identical to the syntax of calling a function.  In this case, we call `Account` with the argument `'Kirk'`, the account holder's name.
 
 ```python
 >>> a = Account('Kirk')
@@ -2890,7 +2897,7 @@ The built-in function `getattr` also returns an attribute for an object by name.
 
 We can also test whether an object has a named attribute with `hasattr`.
 
-```py
+```pythion
 >>> hasattr(spoke_account, 'diposit')
 True 
 ``` 
@@ -2959,4 +2966,271 @@ In some cases, there are instance variables and methods that are related to the 
 
 #### 2.5.4 Class Attributes 
 
+Some attribute values are shared across all objects of a given class.  Such attributes are associated with the class itself, rather than any individual intance of the class.
+
+*e.g.*, the banck interest rate is a single value shared across all accounts.
+<br/>
+
+> Class attributes are created by assignment statement in the suite of a `class` statement, outside of any method definition.  In the broader developer community, class attributes may also be called *class variables* or *static variables*.
+
+*e.g.*,
+```python
+>>> class Account:
+    interest = 0.02       # A class attribute
+    def __init__(self, account_holder):
+        self.balance = 0
+        self.holder = account_holder
+    # Additional methods would be defined here
+``` 
+
+Another way to create the class attribute:
+
+```python
+>>> class Account:
+    def __init__(self, account_holder):
+        self.balance = 0
+        self.holder = account_holder
+
+>>> Account.interest = 0.02
+>>> spock_account = Account('Spock')
+>>> spock_account.interest = 0.02
+``` 
+
+This attribute can still be accessed from any instance of the class.
+
+```python 
+>>> spock_account = Account('Spock')
+>>> kirk_account = Account('Kirk')
+>>> spock_account.interest
+0.02
+>>> kirk_account.interest
+0.02
+``` 
+
+However, a single assignment statement to a class attribute changes the value of the attribute for all instances of the class,
+
+```python
+>>> Account.interest = 0.04
+>>> spock_account.interest
+0.04
+>>> kirk_account.interest
+0.04
+``` 
+<br/>
+
+
+##### <u>Attribute names</u>
+
+We could easily have a class attribute and an instance attribute with the *same name*.
+$\implies$ How names are resolved to particular attributes?
+
+To evaluate a dot expression `<expression> . <name>`:
+
+1. Evaluate the `<expression>` to the left of the dot, which yields the *object* of the dot expression.
+2. `<name>` is matched against the instance attributes of that object:
+   * if an attribute with that name exists, its value is returned;
+   * else, `<name>` is looked up in the class, which yields a class attribute value.
+3. The value is returned unless it is a function, in which case a bound method is returned instead.
+
+In this evaluation procedure, instance attributes are found *before* class attributes, just as local names have priority over global in an environment.
+<br/>
+
+
+
+##### <u>Attribute assignment</u>
+
+All assignment statements that contain a dot expression on their left-hand side affect attributes for the object of that dot expression.
+
+* If the object is an instance, then assignment sets an instance attribute;
+* If the object is a class, then assignment sets a class attribute.
+
+$\implies$ Assignment to an attribute of an object **cannot** affect the attributes of its class.
+
+For example, if we assign to the named attribute `interest` of an account instance, we create a ***new** instance attribute* that has the same name as the existing class attribute.
+
+```python
+>>> kirk_account.interest = 0.08
+``` 
+
+and that attribute value will be returned from a dot expression.
+
+```python
+>>> kirk_account.interest
+0.08
+``` 
+
+However, the class attribute `interest` still retains its original value, which is returned for all other accounts.
+
+```python
+>>> spock_account.interest 
+0.04
+``` 
+
+Changes to the class attribute `interest` will affect `spock_account`, bu the instance attibute for `kirk_account` will be unaffected.
+
+```python
+>>> Account.interest = 0.05       # changing the class attribute
+>>> spock_account.interest        # changes instances without like-named instance attributes
+0.05
+>>> kirk_account.interest         # but the existing instance attribute is unaffected
+0.08
+``` 
+<br/>
+<br/>
+
+
+
+
+
+#### 2.5.5 Inheritance
+
+In OOP, we often find that different types are related.  In particular, we find that similar classes differ in their amount of specialization.  Two classes may have similar attributes, but one represents a *special case* of the other.
+
+For example, we may want to implement a checking account, which is different from a standard account:
+
+* A checking account charges an extra \$1 for each withdraw;
+* A checking acocunt has a lower interest rate.
+
+```python
+>>> ch = CheckingAccount('Spock')
+>>> ch.interest       # Lower interest rate for checking accounts
+0.01
+>>> ch.deposit(20)    # Deposits are the same 
+20
+>>> ch.withdraw(5)    # Withdraws decrease balance by an extra charge
+14
+``` 
+
+A `CheckingAccount` is a *specialization* of an `Account`.
+
+In OOP terminology, the generic account will serve as the **base class** (or *parent class* */* *superclass*) of `CheckingAccount`, while `CheckingAccount` will be a **subclass** (or *child class*) of `Account`.
+
+A subclass ***inherites*** the attributes of its base class, but may ***override*** certain attributes, including certain methods.  $\impliedby$  With inheritance, we only specify what is **different** between the subclass and the base class.  Anything taht we leave unspecified in the subclass is automatically assumed to behave just as it would for the base class.
+
+**[Not fully understood]**  Inheritance also has a role in our object metaphor, in addition to being a useful organizational feature.  Inheritance is meant to represent *is-a* relationships between classes, which contrast with *has-a* relationships.
+
+* A checking account *is-a* specific type of account, so having a `CheckingAccount` inherit from `Account` is an appropriate use of inheritance 
+* A bank *has-a* list of bank accounts that it manages, so neither should inherit from the other.  Instead, a list of account objects would be naturally expressed as an instance attribute of a bank object.
+<br/>
+<br/>
+
+
+
+
+
+#### 2.5.6 Using Inheritance 
+
+Let's start with a full implementation of the `Account` class:
+
+```python
+>>> class Account:
+        """A bank account that has a non-negative balance."""
+        interest = 0.02
+        def __init__(self, account_holder):
+            self.balance = 0
+            self.holder = account_holder
+        def deposit(self, amount):
+            """Increase the account balance by amount and return the new balance."""
+            self.balance = self.balance + amount
+            return self.balance
+        def withdraw(self, amount):
+            """Decrease the account balance by amount and return the new balance."""
+            if amount > self.balance:
+                return 'Insufficient funds'
+            self.balance = self.balance - amount
+            return self.balance
+``` 
+
+A full implementation of `CheckingAccount` appears below.  
+
+> We specify inheritance by replacing an *expression that evaluates to the base class* in parentheses after the class name.
+
+```python
+>>> class CheckingAccount(Account):
+        """A bank account that charges for withdrawals."""
+        withdraw_charge = 1
+        interest = 0.01
+        def withdraw(self, amount):
+            return Account.withdraw(self, amount + self.withdraw_charge)
+``` 
+
+Here, we introduce a class attribute `withdraw_charge` that is specific to the `CheckingAccount` class.  We assign a lower value to the `interest` attribute.  We also define a new `withdraw` method to override the behavior defined in the `Account` class.  With no further statements in the class suite, all other behavior is inherited from the base class `Account`.
+
+```python
+>>> chekcing = CheckingAccount('Sam')
+>>> checking.deposit(10)
+10
+>>> checking.withdraw(5)
+4
+>>> checking.interest
+0.01
+``` 
+
+The expression `checking.deposit` evaluates to a bound method for making deposits, which was defined in the `Account` class.
+$\implies$  When Python resolves a name in a dot expression that is not an attribute of the instance, it looks up the name in **every base class** recursively:
+
+1. If it names an attibute in the class, return the attribute value;
+2. Otherwise, look up the name in the base class, if there is one.
+<br/>
+
+
+*e.g.*, in the case of `deposit`, Python would have looked for the name
+1. on the instance 
+2. in the `CheckingAccount` class 
+3. in the `Account` class (where `deposit` is defined)
+
+The `deposit` method is invoked with the argument 10, which calls the deposit method with `self` bound to the `checking` object and `amount` bound to 10.
+$\implies$ The class of an object stays constant throughout.  Even though the `deposit` method was found in the `Amount` class, `deposit` is called with `self` bound to an instance of `CheckingAccount`, **not** of `Account`.
+<br/>
+
+
+##### <u>Calling ancestors</u>
+
+Attributes that have been overridden are still accessible via **class objects**.
+
+For example, we implemented the `withdraw` method of `CheckingAccount` by calling the `withdraw` method of `Account` with an argument that included the `withdraw_charge`.
+
+Notices that we called `self.withdraw_charge` rahter than the equivalent `CheckingAccount.withdraw_charge`.  The benefit of the former over the latter is that a class that inherits from `CheckingAccount` might override the `withdraw_charge`.  If that is the case, we would like our implementation of `withdraw` to find that new value instead of the old one.
+<br/>
+
+
+##### <u>Interfaces</u>
+
+It is extremely common in object-oriented programs that different types of objects will share the same attribute names.
+
+> An ***object interface*** is a collection of attributes and conditions on those attributes.
+
+*e.g.*, all accounts must have `deposit` and `withdraw` methods that take numerical arguments, as well as a `balance` attribute.  The classes `Account` and `CheckingAccount` both implement this interface.  Inheritance specifically promotes name sharing in this way.
+
+In some programming language such as Java, interface implementations must be explicitly declared.  In others like Python, Ruby, and Go, any object with the appropriate names implements an interface.
+
+***[Not fully understood]*** The parts of your program that use objects (rathre than implementing them) are most robust to future changes if they do not make assumptions about object types, but instead only about their attribute names.  *i.e.*, they use the object abstraction, rather than assuming anything about its implementation.
+
+For example, let us say that we run a lottery, and we wish to deposit \$5 into each of a list of accounts.  The following implementation does not assume anything about the types of those accounts, and therefore works equally well with any type of object that has a `deposit` method:
+
+```python
+>>> def deposit_all(winners, amount=5):
+        for account in winners:
+            account.deposit(amount)
+``` 
+
+The function `deposit_all` above assumes only that each `account` satisfies that account object abstraction, and so it will work with any other acount classes that also implement this interface.
+
+Assuming a particular class of account would violate the abstraction barrier of the account object abstraction. *e.g.*, the following implementation will not necessarily work with new kinds of accounts:
+
+```python
+>>> def deposit_all(winners, amount=5):
+        for account in winners:
+            Account.deposit(account, amount)
+``` 
+
+More details on this topic later in this chapter.
+<br/>
+<br/>
+
+
+
+
+
+#### 2.5.7 Multiple Inheritance 
 
