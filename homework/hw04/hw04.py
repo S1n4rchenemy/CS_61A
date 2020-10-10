@@ -146,8 +146,6 @@ def permutations(seq):
         yield seq 
     else:
         for sub_seq in permutations(seq[1:]):
-            #print('sub_seq is ', str(sub_seq))
-            #print('seq is ', str(seq))
             for i in range(len(seq)):
                 temp = sub_seq[:]
                 temp.insert(i, seq[0])
@@ -195,6 +193,18 @@ def make_joint(withdraw, old_pass, new_pass):
     "Frozen account. Attempts: ['my', 'secret', 'password']"
     """
     "*** YOUR CODE HERE ***"
+    result = withdraw(0, old_pass)
+    if type(result) == str:
+        return result 
+    else:
+        def joint(amount, entered_password):
+            if entered_password == new_pass:
+                return withdraw(amount, old_pass)
+            return withdraw(amount, entered_password)
+        return joint
+
+
+
 
 
 def remainders_generator(m):
@@ -229,6 +239,14 @@ def remainders_generator(m):
     11
     """
     "*** YOUR CODE HERE ***"
+    for i in range(m):
+        def gen_i():
+            item = naturals()
+            for x in item:
+                if x % m == i:
+                    yield x 
+        yield gen_i()
+
 
 
 def naturals():
