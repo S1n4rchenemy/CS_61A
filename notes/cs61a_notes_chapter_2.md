@@ -6,7 +6,7 @@ html:
   offline: true 
 toc:
   depth_from: 3
-  depth_to: 6
+  depth_to: 5
   ordered: false
 ---
 
@@ -107,9 +107,27 @@ toc:
         - [<u>Attribute assignment</u>](#uattribute-assignmentu)
       - [2.5.5 Inheritance](#255-inheritance)
       - [2.5.6 Using Inheritance](#256-using-inheritance)
+        - [<u>An interesting example</u>](#uan-interesting-exampleu)
         - [<u>Calling ancestors</u>](#ucalling-ancestorsu)
         - [<u>Interfaces</u>](#uinterfacesu)
       - [2.5.7 Multiple Inheritance](#257-multiple-inheritance)
+        - [<u>Further reading</u>](#ufurther-readingu)
+      - [2.5.8 The Role of Objects](#258-the-role-of-objects)
+    - [2.6 Implementing Classes and Objects](#26-implementing-classes-and-objects)
+    - [2.7 Object Abstraction](#27-object-abstraction)
+      - [2.7.1 String Conversion](#271-string-conversion)
+      - [2.7.2 Special Methods](#272-special-methods)
+        - [<u>True and false values</u>](#utrue-and-false-valuesu)
+        - [<u>Sequence operation</u>](#usequence-operationu)
+        - [<u>Callable objects</u>](#ucallable-objectsu)
+        - [<u>Arithmetic</u>](#uarithmeticu)
+      - [2.7.3 Multiple Representations](#273-multiple-representations)
+        - [[Example]: <u>Complex numbers</u>](#example-ucomplex-numbersu)
+          - [Interfaces](#interfaces)
+          - [Properties](#properties)
+      - [2.7.4 Generic Functions](#274-generic-functions)
+        - [<u>Type dispatching</u>](#utype-dispatchingu)
+        - [<u>Coercion</u>](#ucoercionu)
 
 <!-- /code_chunk_output -->
 
@@ -2897,7 +2915,7 @@ The built-in function `getattr` also returns an attribute for an object by name.
 
 We can also test whether an object has a named attribute with `hasattr`.
 
-```pythion
+```python
 >>> hasattr(spoke_account, 'diposit')
 True 
 ``` 
@@ -2995,6 +3013,7 @@ Another way to create the class attribute:
 >>> spock_account = Account('Spock')
 >>> spock_account.interest = 0.02
 ``` 
+<br/>
 
 This attribute can still be accessed from any instance of the class.
 
@@ -3109,8 +3128,11 @@ A subclass ***inherites*** the attributes of its base class, but may ***override
 
 **[Not fully understood]**  Inheritance also has a role in our object metaphor, in addition to being a useful organizational feature.  Inheritance is meant to represent *is-a* relationships between classes, which contrast with *has-a* relationships.
 
-* A checking account *is-a* specific type of account, so having a `CheckingAccount` inherit from `Account` is an appropriate use of inheritance 
-* A bank *has-a* list of bank accounts that it manages, so neither should inherit from the other.  Instead, a list of account objects would be naturally expressed as an instance attribute of a bank object.
+* A checking account *is-a* specific type of account.
+  * *e.g.*, a checking account *is a* specific type of account. $\implies$ so `CheckingAccount` inherits from `Account`.
+
+* A bank *has-a* list of bank accounts that it manages.
+  * *e.g.*, a bank *has a* collection of bank accounts it manages. $\implies$ so a bank has a list of accounts as an attribute.
 <br/>
 <br/>
 
@@ -3183,6 +3205,19 @@ The `deposit` method is invoked with the argument 10, which calls the deposit me
 $\implies$ The class of an object stays constant throughout.  Even though the `deposit` method was found in the `Amount` class, `deposit` is called with `self` bound to an instance of `CheckingAccount`, **not** of `Account`.
 <br/>
 
+##### <u>An interesting example</u>
+
+<div align = "center">
+<img src='./assets/Lec_19_slides_png_Page19.png' width='800' alt='Lecture 19 slide 19' />
+</div>
+<br/>
+
+* Notice how the `self` is bound when instantiating `C`.
+
+* Notice the process of finding `a.z`. (*i.e.*, when a class does not have an `__init__` function, how can an instance of this class find an attribute.)
+<br/>
+
+
 
 ##### <u>Calling ancestors</u>
 
@@ -3233,4 +3268,684 @@ More details on this topic later in this chapter.
 
 
 #### 2.5.7 Multiple Inheritance 
+
+Python supports the concept of a subclass inheriting attributes from multiple base classes, a language feature called *multiple inheritance*.
+
+Suppose that we have a `SavingsAccount` that inherits form `Account`, but charges customers a small fee every time they make a deposit.
+
+```python
+>>> class SavingsAccount(Account):
+        deposit_charge = 2
+        def deposit(self, amount):
+            return Account.deposit(self, amount - self.deposit_charge)
+``` 
+
+Then, a clever executive conceives of an `AsSeenOnTVAccount` account with the best features of both `CheckingAccount` and `SavingsAccount`: withdrawal fees, deposit fees, and a low interest rate.  $\implies$  It is both a checking and a saving account in one!
+
+```python
+>>> class AsSeenOnTVAccount(CheckingAccount, SavingAccount):
+        def __init__(self, account_holder):
+            self.holder = account_holder
+            self.balance = 1        # A free dollar!
+``` 
+
+In fact, this implementation is **complete**.  Both withdrawal and deposits will generate fees, uisng the function definitions in `CheckingAccount` and `SavingsAccount` respectively:
+
+```python
+>>> such_a_deal = AsSeenOnTVAccount("John")
+>>> such_a_deal.balance 
+1
+>>> such_a_deal.deposit(20)       # $2 fee from SavingAccount.deposit
+19
+>>> such_a_deal.withdraw(5)       # $1 fee from CheckingAccount.withdraw
+13
+``` 
+
+Non-ambiguous references are resolved correctly as expected:
+
+```python
+>>> such_a_deal.deposit_charge
+2
+>>> such_a_deal.withdraw_charge
+1
+``` 
+<br/>
+
+But what about when the reference is *ambiguous*, such as the reference to the `withdraw` method that is defined in both `Account` and `CheckingAccount`?  The figure below depicts an *inheritance graph* for the `AsSeenOnTVAccount` class.  Each arrow points from a subclass to a base class.
+
+<img src='./assets/2_5_7_fig_1.png' width='400' alt='2.5.7 fig. 1' />
+
+For a simple "diamond" shape like this, Ptyhon resolves names:
+
+1. from *left* to *right*
+2. from *bottom* to *top* 
+
+In this example, Python checks for an attribute name in the following classes, in order, until an attribute with that name is found:
+
+`AsSeenOnTVAccount`, `CheckingAccount`, `SavingsAccount`, `Account`, `object`
+
+There is no correct solution to the inheritance ordering problem, as there are cases in which we might prefer to give precedence to chain inherited calsses over others.  However, any programming language that supports multiple inheritance must select some ordering in a consistent way, so that users of the language can predict the behavior of their programs.
+
+##### <u>Further reading</u>
+
+Python resolves this name using a recursive algorithm called the *C3 Method Resolution Ordering*.  The method resolution order of any class can be queried using the `mro` method on all classes.
+
+```python
+>>> [c.__name__ for c in AsSeenOnTVAccount.mro()]
+['AsSeenOnTVAccount', 'CheckingAccount', 'SavingsAccount', 'Account', 'object']
+``` 
+
+The precise algorithm for finding method resolution orderings is not a topic for this text, but is [described by Python's primary author](http://python-history.blogspot.com/2010/06/method-resolution-order.html) with a reference to the original paper.
+<br/>
+<br/>
+
+
+
+
+
+#### 2.5.8 The Role of Objects
+
+The Python object system is designed to make data abstraction and message passing both convenient and flexible.  $\implies$  To improve our ability to organize large programs.
+
+In particular, we would like our object system to promote a *separation of concerns* among the different aspects of the program.
+
+* Each object in a program encapsulates and manages some part of the program's state,
+* Each class statement defines the functions that implement some part of the program's overall logic.
+* Abstraction barriers enforce the boundaries between different aspects of a large program.
+
+OOP is particularly well-suited to programs that model systems that have separate but interacting parts.
+
+* *e.g.*, different users interact ina social network, different characters interact in a game, and different shapes interact in a physical simulation.
+
+When representing such systems, the objects in a program often *map* naturally onto objects in the system being modeled, and classes represent their types and relationships.
+
+On the other hand, classes may **not** provide the best mechanism for implementing certain abstractions.
+
+* Functional abstractions provide a more natural metaphor for representing relationships between inputs and outputs.  
+
+$\implies$  One should not feel compelled to fit every bit of logic in a program within a class, especially when defining independent function for manipualting data is more natural.  *Functions can also enforce a separation of concerns*.
+
+Multi-paradigm languages such as Python allow programmers to match organizational paradigms to appropriate problems.  Learning to identify when to introduce a new class, as opposed to a new function, in order to simplify or modularize a program, is an important design skill in software engineering that deserves careful attention.
+<br/>
+<br/>
+
+
+
+
+---
+
+
+
+### 2.6 Implementing Classes and Objects
+
+
+<br/>
+<br/>
+
+
+
+
+---
+
+
+
+### 2.7 Object Abstraction 
+
+The object system allows programmers to build and use abstract data representations efficiently.  It is also designed to allow multiple representations of abstract data to coexist in the same program.
+
+A central concept in object abstraction is a ***generic function***, which is a function that can accept values of multiple different types.
+
+We will consider three different techniques for implementing generic functions:
+
+1. shared interfaces 
+2. type dispatching
+3. type coercion 
+
+In the process of building up these concepts, we will also discover features of the Python object system that support the creation of generic functions.
+<br/>
+
+
+#### 2.7.1 String Conversion 
+
+To represent data effectively, an object value should behave like the kind of data it is meant to represent, including producing a string representation of itself.  
+
+String representations of data values are especially important in an interactive language such as Python that automatically displays the string representation of the values of expressions in an interactive session.
+
+String values provide a fundamental medium for communicating information among humans.  Strings are also fundamental to programming because they can represent Python expressions.
+
+Python stipulates that all objects should produce two different string representations:
+
+1. one that is **human-interpretable** text.  $\implies$  The constructor function for string, `str`.
+2. one that is a **Python-interpretable** expression.  $\implies$  The `repr` function returns a Python expression that evaluates to an equal object.
+
+Belwo is the docstring for `repr`,
+
+```python
+repr(object) -> string
+
+Return the canonical string representation of the object.
+For most object types, eval(repr(object)) == object.
+```
+
+The result of calling `repr` on the value of an expression is what Python prints in an interactive session.
+
+```python
+>>> 12e12
+12000000000000.0
+>>> print(repr(12e12))
+12000000000000.0
+``` 
+
+In cases where no representation exists that evaluates to the original value, Python typically produces a description surrounded by angled brackets.
+
+```python
+>>> repr(min)
+'<built-in function min>'
+``` 
+
+The `str` constructor often coincides with `repr`, but providess a more interpretable text representation in some cases. 
+
+*e.g.*,
+```python
+>>> from datetime import date
+>>> tues = date(2011, 9, 12)
+>>> repr(tues)
+'datetime.date(2011, 9, 12)'
+>>> str(tues)
+'2011-09-12'
+``` 
+<br/>
+
+
+Defining the `repr` function presents a new challenge: we would like it to apply correctly to all data types, even those that did not exist when `repr` was implemented.  $\implies$  We would like it to be a ***generic*** or ***polymorphic function*** (*i.e.*, one that can be applied to many (*poly*) different forms (*morph*) of data).
+
+The object system provides an elegant solution in this case: the `repr` function always invokes a method called `__repr__` on its argument.
+
+```python
+>>> tues.__repr__()
+'datetime.date(2011, 9, 12)'
+```
+
+By implementing this same method in user-defined classes, we can extend the applicability of `repr` to any class we create in the future. ***[How?]***  This example highlights another benefit of dot expression in general, that they provide a mechanism for extending the domain of existing functions to new object types.
+
+The `str` constructor is implemented in a similar manner: it invokes a method called `__str__` on its argument.
+
+```python
+>>> tues.__str__()
+'2011-09-12'
+``` 
+
+These polymorphic functions are examples of a more general priciple: 
+
+> *Certain functions should apply to multiple data types.  Morevoer, one way to create such a function is to use a shared attribute name with different definition in each class.*
+
+<br/>
+<br/>
+
+
+
+
+#### 2.7.2 Special Methods
+
+In Python, certain *special names* are invoked by the Python interpreter in special circumstances.  
+
+*e.g.*, the `__init__` method of a class is automatically invoked whenever an object is constructed.  The `__str__` method is invoked automatically when printing, and `__repr__` is invoked in an interactive session to display values.
+
+There are special names for many other behaviors in Python.  Some of those used most commonly are described below.
+<br/>
+
+##### <u>True and false values</u>
+
+All objects in Python have a truth value.  $\implies$  objects of user-defined classes are considered to be true, but the special `__bool__` method can be used to override this behavior.  If an object defines the `__bool__` method, then Python calls that  method ot determine its truth value.
+
+For example, suppose we want a bank account with 0 balance to be false.  We can add a `__bool__` method to the `Account` class to create this behavior
+
+```python
+>>> Account.__bool__ = lambda self: self.balance != 0
+```
+
+We can then call the `bool` constructor to see the truth value of an object, and we can use any object in a boolean context.
+
+```python
+>>> bool(Account('Jack'))
+False
+>>> if not Account('Jack'):
+        print('Jack has nothing')
+Jack has nothing
+``` 
+<br/>
+
+
+
+##### <u>Sequence operation</u>
+
+We have seen that we can call the `len` function to determine the length of a sequence.
+
+```python
+>>> len('Go Bears!')
+9
+``` 
+
+The `len` function invokes the `__len__` method of its argument to determine its length.  All built-in sequence types implement this method.
+
+```python
+>>> 'Go Bears!'.__len__()
+9
+``` 
+
+Python uses a sequence's length to determine its truth value, if it does not provide a `__bool__` method.  Empty sequences are flase, while non-empty sequences are true.
+
+```python
+>>> bool('')
+False
+>>> bool([])
+False
+>>> bool('Go Bears!')
+True
+``` 
+
+The `__getitem__` method is invoked by the element selection oeprator, but it can also be invoked directly.
+
+```python
+>>> 'Go Bears!'[3]
+'B'
+>>> 'Go Bears!'.__getitem__(3)
+'B'
+``` 
+<br/>
+
+
+
+##### <u>Callable objects</u>
+
+In Python, functions are *first-class* objects $\implies$ they can be passed around as data and have attributes like any other object.
+
+Python also allows us to define objects that can be "called" like functions by including a `__call__` method.  With this method, we can define a class that behaves like a higher-order function.
+
+As an example, consider the following higher-order function, which returns a function that adds a constant value to its argument
+
+```python
+>>> def make_adder(n):
+        def adder(k):
+            return n + k
+        return adder 
+
+>>> add_three = make_adder(3)
+>>> add_three(4)
+7
+``` 
+
+We can create an `Adder` class that defines a `__call__` method to provide the same functionality.
+
+```python
+>>> class Adder(object):
+        def __init__(self, n):
+            self.n = n
+        def __call__(self, k):
+            return self.n + k
+
+>>> add_three_obj = Adder(3)
+>>> add_three_obj(4)
+7
+``` 
+
+Here, the `Adder` class behaves like the `make_adder` higher-order function, and the `add_three_obj` object behavess like the `add_three` function.  We have further blurred the line between data and functions.
+<br/>
+
+
+##### <u>Arithmetic</u>
+
+Special methods can also define the behavior of built-in operators applied to user-defined objects.  In order to provide this generality, Python follows specific protocols to apply each operator.
+
+For example, to evaluate expressions that contain the `+` operator, Python checks for special methods on both the left and right operands of the expression.  
+
+1. Python checks for an `__add__` method on the value of the left operand, then checks for an `__radd__` method on the value of the right operand.
+2. If either is found, that method is invoked with the value of the other operand as its argument.
+
+Some examples are given in the following sections.
+
+For readers interested in further details, 
+
+* the Python documentation describes the exhaustive set of [method names for operators](https://docs.python.org/3/reference/datamodel.html#special-method-names)
+
+* Dive into Python 3 has a chapter on [special method names](https://diveintopython3.problemsolving.io/special-method-names.html) that describes how many of these special method names are used.
+<br/>
+<br/>
+
+
+
+#### 2.7.3 Multiple Representations 
+
+There might be more than one useful representation for a data object, and we might like to design systems that can deal with multiple representations.
+
+> *e.g.*
+> Complex numbers may be represented in two almost equivalent ways:
+> * Rectangular form (real and imaginary parts) $\implies$ More convenient for doing *adding* operations
+> * Polar form (magnitude and angle) $\implies$ More natural to be used in *multiplying* operations 
+
+Large software systems are often designed by many people working over extended period of time, subject to requirements that change over time.  In such an environment, it is simply not possible for everyone to agree in advance on choices of data representation. $\implies$ In addition to the data-abstraction barries that isolate representation from use, we need abstraction barriers that isolate different design choices from each other and premit different choices to coexist in a single program.
+<br/>
+
+##### [Example]: <u>Complex numbers</u>
+
+We will begin our implementation at the highest level of abstraction and work towards concrete representations.
+
+1. A `Complex` number is a `Number`, and numbers can be *added* or *multiplied* together.  How numbers can be added or multiplied is abstracted by the method name `add` and `mul`.
+
+```python
+>>> class Number:
+        def __add__(self, other):
+            return self.add(other)
+        def __mul__(self, other):
+            return self.mul(other)
+``` 
+
+* This class requires that Number objects have `add` and `mul` methods, but does **not** define them.
+* It does **not** have an `__init__` method.  $\impliedby$  The purpose of `Number` is not to be instantiated directly, but instead to serve as a superclass of various specific number classes.
+<br/>
+
+
+2. Next we are going to define `add` and `mul` appropriately for complex numbers.  The rectangular form will be used for `add`, and the polar form will be employed in `mul`.
+
+```python
+>>> class Complex(Number):
+        def add(self, other):
+            return ComplexRI(self.real + other.real, self.imag + other.imag)
+        def mul(self, other):
+            magnitude = self.magnitude * other.magnitude 
+            return ComplexMA(magnitude, self.angle + other.angle)
+``` 
+
+* The `Complex` class inherits from `Number` and describes arithmetic for complex numbers.
+* The implementation assumes that two classes exist for complex numbers, corresponding to their two natual representations:
+  * `ComplexRI` constructs a complex number from real and imaginary parts 
+  * `ComplexMA` constructs a complex number from a magnitude and angle.
+<br/>
+
+
+###### Interfaces 
+
+An ***interface*** is a set of shared attribute names, along with a specification of their behavior.
+
+In the case of complex numbers, the interface needed to implement arithmetic consists of four attributes: `real`, `imag`, `magnification`, and `angle`.
+
+For complex arithmetic to be corrent, these attributes must be **consistent**.  *i.e.*, `(real, imag)` and `(magnitude, angle)` must describe the same point on the complex plane.  The `Complex` class *implicitly* defines this interface by determining how these attributes are used to `add` and `mul` complex numbers.
+<br/>
+
+
+###### Properties 
+
+The requirement that two or more attribute values maintain a fixed relationship with each other is a new problem.  
+
+One solution is to store attribute values for only one representation and compute the other representation whenever it is needed.
+
+Python has a simple feature for computing attributes on the fly from zero-argument functions.  The `@property` decorator allows functions to be called without call expression syntax (*i.e.*, parentheses following an expression).
+<br/>
+
+
+3. The `ComplexRI` class stores `real` and `imag` attributes and computes `magnitude` and `angle` on demand.
+
+```python
+>>> from math import atan2
+>>> class ComplexRI(Complex):
+        def __init__(self, real, imag):
+            self.real = real
+            self.imag = imag
+        @property
+        def magnitude(self):
+            return (self.real ** 2 + self.imag ** 2) ** 0.5
+        @property 
+        def angle(self):
+            return atan2(self.imag, self.real)
+        def __repr__(self):
+            return 'ComplexRI({0:g}, {1:g})'.format(self.real, self.imag)
+``` 
+
+* As a result of this implementation, all four attributes needed for complex arithmetic can be accessed without any call expressions, and changes to `real` or `imag` are reflected in the `magnitude` and `angle`.
+  ```python
+  >>> ri = ComplexRI(5, 12)
+  >>> ri.real
+  5
+  >>> ri.magnitude
+  13.0
+  >>> ri.real = 9
+  >>> ri.real
+  9
+  >>> ri.magnitude
+  15.0
+  ``` 
+<br/>
+
+
+4. Similarly, the `ComplexMA` class stores `magnitude` and `angle`, but computes `real` and `imag` whenever those attributes are looked up:
+
+```python
+>>> from math import sin, cos, pi
+>>> class ComplexMA(Complex):
+        def __init__(self, magnitude, angle):
+            self.magnitude = magnitude
+            self.angle = angle
+        @property
+        def real(self):
+            return self.magnitude * cos(self.angle)
+        @property
+        def imag(self):
+            return self.magnitude * sin(self.angle)
+        def __repr__(self):
+            return 'ComplexMA({0:g}, {1:g} * pi)'.format(self.magnitude, self.angle/pi)
+``` 
+
+* Changes to the `magnitude` or `angle` are reflected immediately in the `real` and `imag` attributes.
+  ```python
+  >>> ma = ComplexMA(2, pi/2)
+  >>> ma.imag 
+  2.0
+  >>> ma.angle = pi 
+  >>> ma.real
+  -2.0
+  ``` 
+<br/>
+
+
+Our implementation of complex number is now complete.  Either calss implementing complex numbers can be used for either argument in either arithmetic function in `Complex`.
+
+```python
+>>> from math import pi 
+>>> ComplexRI(1, 2) + ComplexMA(2, pi/2)
+Complex(1, 4)
+>>> ComplexRI(0, 1) * ComplexRI(0, 1)
+ComplexMA(1, 1 * pi)
+``` 
+<br/>
+
+The interface approach to encoding multiple representations has appealing properties.
+
+* The class for each representation can be developed separately
+* They must only agree on the names of the attributes they share, as well as any behavior conditions for those attributes.
+* The interface is also *additive*
+  * If another programmer wanted to add a third representation of complex numbers to the same program, they would only have to create another class with the same attributes.
+
+Multiple representations of data are closely related to the idea of data abstraction:
+
+* Using data abstraction, we were able to change the implementation of a data type without changing the meaning of the program.
+* With interfaces and message passing, we can hve multiple different representations within the same program.
+* In both cases, a set of names and corresponding behavior conditions define the abstraction that enables this flexibility. 
+<br/>
+<br/>
+
+
+
+
+
+#### 2.7.4 Generic Functions 
+
+Generic functions are methods or functions that apply to arguments of different types.
+
+For example, the `Complex.add` method is generic, because it can take either a `ComplexRI` or `ComplexMA` as the value for `other`.  This flexibility was gained by ensuring that both `ComplexRI` and `ComplexMA` share an interface.  
+
+Using interfaces and message passing is only one of several methods used to implement generic functions.
+<br/>
+
+
+Suppose that, in addition to our conplex number classes, we implement a `Rational` class to represent fractions exactly.  The `add` and `mul` methods epxress the same computations as the `add_rational` and `mul_rational` functions from earlier in the chapter.
+
+```python
+>>> from fractions import gcd 
+>>> class Rational(Number):
+        def __init__(self, numer, denom):
+            g = gcd(numer, denom)
+            self.numer = numer // g 
+            self.denom = denom // g
+        def __repr__(self):
+            return 'Rational({0}, {1})'.format(self.numer, self.denom)
+        def add(self, other):
+            nx, dx = self.numer, self.denom 
+            ny, dy = other.numer, other.denom 
+            return Rational(nx * dy + ny * dx, dx * dy)
+        def mul(self, other):
+            numer = self.numer * other.numer 
+            denom = self.denom * other.denom 
+            return Rational(numer, denom)
+``` 
+
+We have implemented the interface of the `Number` superclass by including `add` and `mul` methods.  As a result, we can add and multiply rational numbers using familiar operators.
+
+```python
+>>> Rational(2, 5) + Rational(1, 10)
+Rational(1, 2)
+>>> Rational(1, 4) * Rational(2, 3)
+Rational(1, 6)
+``` 
+
+However, we cannot yet add a rational number to a complex number, although in mathematics such a combination is well-defined.  We would like to introduce this cross-type operation in some carefully controlled way, so that we can support it without seriously violating our abstraction barriers.
+
+There is a tension between the outcomes we desire:
+
+* We would like to use a generic `__add__` method that does the right thing with all numeric types.
+
+* At the same time, we would also like to separate the concerns of complex numbers and rational numbers whenever possbile, in order to maintain a modular program.
+<br/>
+
+
+##### <u>Type dispatching</u>
+
+One way to implement cross-type operations is to select behavior based on the types of the arguments to a function or method.  
+$\dArr$
+> The idea of type dispatching is to write funcitons that inspect the type of arguments they receive, then execute code that is appropriate for those types.
+
+<br/>
+
+The built-in function `isinstance` takes an object and a class.  It returns true if the object has a class that either or inherits from the given class.
+
+```python
+>>> c = ComplexRI(1, 1)
+>>> isinstance(c, ComplexRI)
+True
+>>> isinstance(c, Complex)
+True
+>>> isinstance(c, ComplexMA)
+False
+``` 
+
+A simple example of type dispatching is an `is_real` function that uses a different implementation for each type of complex number.
+
+```python
+>>> def is_real(c):
+        """Return whether c is a real number with no imaginary part."""
+        if isinstance(c, ComplexRI):
+            return c.imag == 0
+        elif isinstance(c, ComplexMA):
+            return c.angle % pi ==  0
+
+>>> is_real(ComplexRI(1, 1))
+False
+>>> is_real(ComplexMA(2, pi))
+True 
+``` 
+
+Type dispatching is not always performed using `isinstance`.  For arithmetic, we will give a `type_tag` attribute to `Rational` and `Complex` instances that has a string value. $\implies$ When two values `x` and `y` have the same `type_tag`, then we can combine them directly with `x.add(y)`.  If not, we need a cross-type operation.
+
+```python
+>>> Rational.type_tag = 'rat'
+>>> Complex.type_tag = 'com'
+>>> Rational(2, 5).type_tag == Rational(1, 2).type_tag 
+True 
+>>> ComplexRI(1, 1).type_tag == ComplexMA(2, pi/2).type_tag
+True
+>>> Rational(2, 5).type_tag == ComplexRI(1, 1).type_tag
+False
+``` 
+
+To combine complex and rational numbers, we write functions that rely on both of their representations simultaneously.  Below, we rely on the fact that a `Rational` can be converted approximately to a `float` value that is a real number.  The result can be combined with a complex number.
+
+```python
+>>> def add_complex_and_rational(c, r):
+        return ComplexRI(c.real + r.numer / r.denom, c.imag)
+``` 
+
+Multiplication involves a similar conversion.  In polar form, a real number in the complex plane always has a positive magnitude.  The angle 0 indicates a positive number.  The angle `pi` indeicates a negative number.
+
+```python
+>>> def mul_complex_and_rational(c, r):
+        r_magnitude, r_angle = r.numer / r.denom, 0
+        if r_magnitude < 0:
+            r.magnitude, r_angle = -r_magnitude, pi
+        return ComplexMA(c.magnitude * r_magnitude, c.angle + r.angle)
+``` 
+
+both addition and multiplication are commutative, so swapping the argument order can use the same implementations of these cross-type operations.
+
+```python
+>>> def add_rational_and_complex(r, c):
+        return add_complex_and_rational(c, r)
+>>> def mul_rational_and_complex(r, c):
+        return mul_complex_and_rational(c, r)
+``` 
+
+The role of type dispatching is to ensure that these cross-type operations are used at appropriate times.  Below, we rewrite the `Number` superclass to use type dispatching for its `__add__` and `__mul__` methods.
+
+* We use the `type_tag` attribute to distinguish types of arguments.
+* The `__add__` method considers two cases:
+  * if two arguments have the same `type_tag`, then it assumes that `add` method of the first can take the second as an argument.
+  * otherwise, it checks whether a dictionary of cross-type implementations, called `adders`, contains a function that can add arguments of those type tags.  If there is, the `cross_apply` method finds and applies it.
+* The `__mul__` method has a similar structure.
+
+```python
+>>> class Number:
+        def __add__(self, other):
+            if self.type_tag == other.type_tag:
+                return self.add(other)
+            elif (self.type_tag, other.type_tag) in self.adders:
+                return self.cross_apply(other, self.adders)
+        def __mul__(self, other):
+            if self.type_tag == other.type_tag:
+                return self.mul(other)
+            elif (self.type_tag, other.type_tag) in self.multipliers:
+                return self.cross_apply(other, self.multipliers)
+        def cross_apply(self, other, cross_fns):
+            cross_fn = cross_fns[(self.type_tag, other.type_tag)]
+            return cross_fn(self, other)
+        adders = {("com", "rat"): add_complex_and_rational,
+                  ("rat", "com"): add_rational_and_complex}
+        multipliers = {("com", "rat"): mul_complex_and_rational,
+                       ("rat", "com"): mul_rational_and_complex}
+``` 
+
+In this new definiton of `Number` class, all cross-type implementations are indexed by pairs of type tags in the `adders` and `multipliers` dictionaries.
+
+This dictionary-based approach of type dispatching is *extensible*.  New subclasses of `Number` could install themselves into the system by declaring a type tag and adding cross-type operations to `Number.adders` and `Number.multipliers`.  They could also define their own `adders` and `multipliers` in a subclass.
+
+While we have introduced some complexity to the system, we can now mix types in addition and multiplication expressions.
+
+```python
+>>> ComplexRI(1.5, 0) + Rational(3, 2)
+ComplexRI(3, 0)
+>>> Rational(-1, 2) * ComplexMA(4, pi/2)
+ComplexMA(2, 1.5 * pi)
+``` 
+<br/>
+
+
+
+##### <u>Coercion</u>
 

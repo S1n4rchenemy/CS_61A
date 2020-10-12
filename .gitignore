@@ -1,6 +1,9 @@
 # class content dir
 class_content/
 
+# .vscode folder
+.vscode/
+
 # pdfs in the root dictionary
 /*.pdf
 
