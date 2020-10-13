@@ -128,6 +128,10 @@ toc:
       - [2.7.4 Generic Functions](#274-generic-functions)
         - [<u>Type dispatching</u>](#utype-dispatchingu)
         - [<u>Coercion</u>](#ucoercionu)
+    - [2.8 Efficiency](#28-efficiency)
+      - [2.8.1 Measuring Efficiency](#281-measuring-efficiency)
+    - [2.9 Recursive Objects](#29-recursive-objects)
+      - [2.9.1 Linked List Class](#291-linked-list-class)
 
 <!-- /code_chunk_output -->
 
@@ -3948,4 +3952,95 @@ ComplexMA(2, 1.5 * pi)
 
 
 ##### <u>Coercion</u>
+
+In the general situation of completely unrelated operations acting on completely unrelated types, implementing explicit cross-type operations is the best that one can hope for.
+
+Often the different data types are not completely independent, and there may be ways by which objects of one type may be viewed as being of another type.  $\implies$  This process is called ***coercion***.
+
+*e.g.*, to arithmetic combine a raional number with a complex number, we can view the rational number as a complex number whose imaginary part is zero.  We can implement this coercion funciton as below:
+
+```python
+>>> def rational_to_complex(r):
+        return ComplexRI(r.numer / r.denom, 0)
+```
+
+Here is the alternative definition of the `Number` class performing cross-type operations by attempting to coerce both arguments to the same type.
+
+```python
+>>> class Number:
+        def __add__(self, other):
+            x, y = self.coerce(other)
+            return x.add(y)
+        def __mul__(self, other):
+            x, y = self.coerce(other)
+            return x.mul(y)
+        def coerce(self, other):
+            if self.type_tag == other.type_tag:
+                return self, other
+            elif (self.type_tag, other.type_tag) in self.coercions:
+                return (self.coerce_to(other.type_tag), other)
+            elif (other.type_tag, self.type_tag) in self.coercions:
+                return (self, other.coerce_to(self.type_tag))
+        def coerce_to(self, other_tag):
+            coercion_fn = self.coercions[(self.type_tag, other_tag)]
+            return coercion_fn(self)
+        coercions = {('rat', 'com'): rational_to_complex}
+``` 
+
+* The `coercions` dictionary indexes all possible coercions by a pair of type tags, indicating that the corresponding value coerces a value of the first type to a value of the second type.
+<br/>
+
+* It is not generally possible to coerce an arbitary data object of each type into all other types.  $\implies$  there will be no coercion implementation in the `coercions` dictionary, which coerces an arbitary comlex number to a rational number
+<br/>
+
+
+The **advantages** of the coercion scheme:
+
+* Only need to write one function for each pair of types.  $\impliedby$  The appropriate transformation between types depends only on the types themselves, not on the particular operation to be applied.
+
+* Extensions to coercion:
+  * Conerce two different types each into a third common type. 
+    * *e.g.*, rhombus and rectangle $\longrightarrow$ quadrilaterals
+  * Iterative coercion, in which one data type is coerced into another via intermediate types.
+    * *e.g.*, integer $\longrightarrow$ rational number $\longrightarrow$ real number
+    * Chain coercion can also reduce the total number of coercion functions.
+
+There are also **disadvantages**:
+
+* Coercion funcitons can lose information when they are applied.
+  * *e.g.*, in our example, rational numbers are exact representations, but become approximations when converted to complex numbers.
+
+Some programming languages have automatic coercion systems built in.  Python used to also have, but its complexity did not justify its use, so it was removed.  Instead, particular operators apply coercion to their arguments as needed.
+<br/>
+<br/>
+
+
+---
+
+
+
+### 2.8 Efficiency
+
+Decisions of how to represent and process data are often influenced by the efficiency of alternatives.  Efficiency refers to the computational resources used by a representation or process, such as how much time and required to compute the result of a function or represent an object.  These amounts can vary widely depending on the details of an implementation.
+<br/>
+
+
+#### 2.8.1 Measuring Efficiency 
+
+
+<br/>
+<br/>
+
+
+
+---
+
+
+### 2.9 Recursive Objects 
+
+Objects can have other objects as attribute values.  When an object of some class has an attribute value of that same class, it is a ***recursive object***.
+<br/>
+
+
+#### 2.9.1 Linked List Class 
 
