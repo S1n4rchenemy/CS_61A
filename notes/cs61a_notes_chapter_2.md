@@ -116,6 +116,7 @@ toc:
     - [2.6 Implementing Classes and Objects](#26-implementing-classes-and-objects)
     - [2.7 Object Abstraction](#27-object-abstraction)
       - [2.7.1 String Conversion](#271-string-conversion)
+        - [<u>Implementations of `repr` and `str`</u>](#uimplementations-of-repr-and-stru)
       - [2.7.2 Special Methods](#272-special-methods)
         - [<u>True and false values</u>](#utrue-and-false-valuesu)
         - [<u>Sequence operation</u>](#usequence-operationu)
@@ -3419,10 +3420,12 @@ String values provide a fundamental medium for communicating information among h
 
 Python stipulates that all objects should produce two different string representations:
 
-1. one that is **human-interpretable** text.  $\implies$  The constructor function for string, `str`.
-2. one that is a **Python-interpretable** expression.  $\implies$  The `repr` function returns a Python expression that evaluates to an equal object.
+1. one that is **human-interpretable** text.  $\implies$  The constructor function for string, `str`. $\implies$ `print(object)` is *identical* to `print(str(object))`
+2. one that is a **Python-interpretable** expression.  $\implies$  The `repr` function returns a Python expression that evaluates to an equal object. $\implies$ In *interactive mode*, when this command is `>>> object` executed, the `repr` is actually implicitly called..
 
-Belwo is the docstring for `repr`,
+> *The `repr` and `str` are often the same, but not always.* 
+
+Below is the docstring for `repr`,
 
 ```python
 repr(object) -> string
@@ -3447,6 +3450,39 @@ In cases where no representation exists that evaluates to the original value, Py
 '<built-in function min>'
 ``` 
 
+Several more interesting examples:
+```python
+>>> from fractions import Fraction 
+>>> half = Fraction(1, 2)
+>>> half
+Fraction(1, 2)
+>>> repr(half)
+'Fraction(1, 2)'
+>>> print(half)
+1/2
+>>> str(half)
+'1/2'
+>>> eval(repr(half))
+Fraction(1, 2)
+
+>>> s = "Hello, World"
+>>> s
+'Hello, World'
+>>> print(s)
+Hello, World 
+>>> str(s)
+'Hello, World'
+>>> print(str(s))
+Hello, World
+>>> repr(s)
+"'Hello, World'"
+>>> print(repr(s))
+'Hello, World'
+>>> eval(repr(s))
+'Hello, World'
+``` 
+
+
 The `str` constructor often coincides with `repr`, but providess a more interpretable text representation in some cases. 
 
 *e.g.*,
@@ -3470,7 +3506,17 @@ The object system provides an elegant solution in this case: the `repr` function
 'datetime.date(2011, 9, 12)'
 ```
 
-By implementing this same method in user-defined classes, we can extend the applicability of `repr` to any class we create in the future. ***[How?]***  This example highlights another benefit of dot expression in general, that they provide a mechanism for extending the domain of existing functions to new object types.
+By implementing this same method in user-defined classes, we can extend the applicability of `repr` to any class we create in the future. ***~~[How?]~~***  This example highlights another benefit of dot expression in general, that they provide a mechanism for extending the domain of existing functions to new object types.
+
+> *How?* 
+> Just add the method `__repr__` into the new class, then `repr` function can handle that new class $\implies$ *i.e.*, you just extend the applicability of `repr`!
+> 
+> Same approach also applies to those *special method* names in Python:
+> * add `__str__` method to your new class, then you can use `str` on them!
+> * add `__add__` method to your new class, then you can use `+` to operate them!
+>
+> *See next chapter for more details.*
+
 
 The `str` constructor is implemented in a similar manner: it invokes a method called `__str__` on its argument.
 
@@ -3478,6 +3524,59 @@ The `str` constructor is implemented in a similar manner: it invokes a method ca
 >>> tues.__str__()
 '2011-09-12'
 ``` 
+<br/>
+
+##### <u>Implementations of `repr` and `str`</u>
+
+The behavior of `repr` is slightly more complicated than invoking `__repr__` on its argument:
+
+* An *instance attribute* called `__repr__` is ignored!  Only **class attributes** are found.
+
+*Question*: How would we implement this behavior?
+
+```python
+def repr(x):
+        return type(x).__repr__(x)
+``` 
+<br/>
+
+The behavior of `str` is also complicated:
+
+* An instance attribute called `__str__` is ignored 
+* If no `__str__` attribute is found, uses `repr` string (*that's why they are often the same*)
+* `str` is a class, not a function.  When you call `str`, you are actually calling its constructor.
+<br/>
+
+
+Below is an example showing the properties of `repr` and `str`:
+
+```python
+>>> class Bear:
+        def __init__(self):
+            self.__repr__ = lambda: 'oski'
+            self.__str__ = lambda: 'this bear'
+        
+        def __repr__(self):
+            return 'Bear()'
+        
+        def __str__(self):
+            return 'a bear'
+      
+>>> oski = Bear()
+>>> print(oski)
+a bear        # Note that the __str__ method was implicitly called
+>>> print(str(oski))
+a bear
+>>> print(repr(oski))
+Bear()        # Note that the instance attribute __repr__ is ignored.
+>>> print(oski.__str__())
+this bear
+>>> print(oski.__repr__())
+oski
+```
+<br/>
+
+
 
 These polymorphic functions are examples of a more general priciple: 
 
