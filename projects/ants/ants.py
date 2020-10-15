@@ -52,6 +52,7 @@ class Insect:
 
     damage = 0
     # ADD CLASS ATTRIBUTES HERE
+    is_watersafe = False
 
     def __init__(self, armor, place=None):
         """Create an Insect with an ARMOR amount and a starting PLACE."""
@@ -105,6 +106,7 @@ class Ant(Insect):
     implemented = False  # Only implemented Ant classes should be instantiated
     food_cost = 0
     # ADD CLASS ATTRIBUTES HERE
+    is_buffed = False
 
     def __init__(self, armor=1):
         """Create an Ant with an ARMOR quantity."""
@@ -324,14 +326,25 @@ class Water(Place):
         its armor to 0."""
         # BEGIN Problem 8
         "*** YOUR CODE HERE ***"
+        Place.add_insect(self, insect)
+        if not insect.is_watersafe:
+            insect.reduce_armor(insect.armor)
         # END Problem 8
 
 # BEGIN Problem 9
 # The ScubaThrower class
+class ScubaThrower(ThrowerAnt):
+    """ScubaThrower is a special sub-species of ThrowerAnt and has the ability of living in the water.  However, it also 
+    has much higher food_cost.
+    """
+    name = 'Scuba'
+    food_cost = 6
+    is_watersafe = True
+    implemented = True 
 # END Problem 9
 
 # BEGIN Problem EC
-class QueenAnt(Ant):  # You should change this line
+class QueenAnt(ScubaThrower):  # You should change this line
 # END Problem EC
     """The Queen of the colony. The game is over if a bee enters her place."""
 
@@ -339,12 +352,16 @@ class QueenAnt(Ant):  # You should change this line
     food_cost = 7
     # OVERRIDE CLASS ATTRIBUTES HERE
     # BEGIN Problem EC
-    implemented = False   # Change to True to view in the GUI
+    implemented = True   # Change to True to view in the GUI
+    queen_number = 1
     # END Problem EC
 
     def __init__(self, armor=1):
         # BEGIN Problem EC
         "*** YOUR CODE HERE ***"
+        ScubaThrower.__init__(self, armor)
+        self.number = QueenAnt.queen_number
+        QueenAnt.queen_number += 1
         # END Problem EC
 
     def action(self, gamestate):
@@ -355,6 +372,16 @@ class QueenAnt(Ant):  # You should change this line
         """
         # BEGIN Problem EC
         "*** YOUR CODE HERE ***"
+        if self.number != 1:
+            Ant.reduce_armor(self, self.armor)
+        else:
+            ScubaThrower.action(self, gamestate)
+            curr_place = self.place.exit
+            while curr_place:
+                if curr_place.ant and (not curr_place.ant.is_buffed):
+                    curr_place.ant.damage *= 2
+                    curr_place.ant.is_buffed = True
+                curr_place = curr_place.exit 
         # END Problem EC
 
     def reduce_armor(self, amount):
@@ -363,7 +390,19 @@ class QueenAnt(Ant):  # You should change this line
         """
         # BEGIN Problem EC
         "*** YOUR CODE HERE ***"
+        if self.number == 1:
+            self.armor -= amount 
+            if self.armor <= 0:
+                bees_win()
+        else:
+            ScubaThrower.reduce_armor(self, amount)
         # END Problem EC
+    
+    def remove_from(self, place):
+        if self.number != 1:
+            Ant.remove_from(self, place)
+        else:
+            return
 
 
 
@@ -382,6 +421,7 @@ class Bee(Insect):
     name = 'Bee'
     damage = 1
     # OVERRIDE CLASS ATTRIBUTES HERE
+    is_watersafe = True
 
 
     def sting(self, ant):
