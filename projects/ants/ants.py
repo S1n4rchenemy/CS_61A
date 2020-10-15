@@ -253,15 +253,14 @@ class FireAnt(Ant):
         "*** YOUR CODE HERE ***"
         curr_place = self.place
         temp_bees_list = list(curr_place.bees)
+        
         Ant.reduce_armor(self, amount)
-        if self.place:
-            for bee in temp_bees_list:
+
+        total_damage = (amount if self.place else amount + self.damage) 
+
+        for bee in temp_bees_list:
                 bee_index = curr_place.bees.index(bee)
-                curr_place.bees[bee_index].reduce_armor(amount)             # Will have problem if bees are identical (copied) in the curr_place
-        else:
-            for bee in temp_bees_list:
-                bee_index = curr_place.bees.index(bee)
-                curr_place.bees[bee_index].reduce_armor(amount + self.damage)
+                curr_place.bees[bee_index].reduce_armor(total_damage)             # might have problem if bees are identical (copied) in the curr_place
         # END Problem 5
 
 class HungryAnt(Ant):
@@ -272,28 +271,48 @@ class HungryAnt(Ant):
     food_cost = 4
     # OVERRIDE CLASS ATTRIBUTES HERE
     # BEGIN Problem 6
-    implemented = False   # Change to True to view in the GUI
+    implemented = True   # Change to True to view in the GUI
+    time_to_digest = 3
     # END Problem 6
 
     def __init__(self, armor=1):
         # BEGIN Problem 6
         "*** YOUR CODE HERE ***"
+        Ant.__init__(self, armor)
+        self.digesting = 0
         # END Problem 6
 
     def eat_bee(self, bee):
         # BEGIN Problem 6
         "*** YOUR CODE HERE ***"
+        bee.reduce_armor(bee.armor)
         # END Problem 6
 
     def action(self, gamestate):
         # BEGIN Problem 6
         "*** YOUR CODE HERE ***"
+        if not self.digesting:
+            target = rANTdom_else_none(self.place.bees)
+            if target:
+                self.eat_bee(target)
+                self.digesting = self.time_to_digest
+        else:
+            self.digesting -= 1
         # END Problem 6
 
 
 
 # BEGIN Problem 7
 # The WallAnt class
+class WallAnt(Ant):
+    """WassAnt does nothing each turn, but possesses a high armor.  It is just like a wall!"""
+    name = 'Wall'
+    food_cost = 4
+    implemented = True
+
+    def __init__(self, armor=4):
+        Ant.__init__(self, armor)
+    
 # END Problem 7
 
 
