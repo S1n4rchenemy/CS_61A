@@ -107,6 +107,7 @@ class Ant(Insect):
     food_cost = 0
     # ADD CLASS ATTRIBUTES HERE
     is_buffed = False
+    blocks_path = True 
 
     def __init__(self, armor=1):
         """Create an Ant with an ARMOR quantity."""
@@ -126,7 +127,12 @@ class Ant(Insect):
             place.ant = self
         else:
             # BEGIN Problem Optional 2
-            assert place.ant is None, 'Two ants in {0}'.format(place)
+            assert place.ant.can_contain(self) or self.can_contain(place.ant), 'Two ants in {0}'.format(place)
+            if place.ant.can_contain(self):
+                place.ant.contain_ant(self)
+            elif self.can_contain(place.ant):
+                self.contain_ant(place.ant)
+                place.ant = self
             # END Problem Optional 2
         Insect.add_to(self, place)
 
@@ -437,7 +443,7 @@ class Bee(Insect):
         """Return True if this Bee cannot advance to the next Place."""
         # Special handling for NinjaAnt
         # BEGIN Problem Optional
-        return self.place.ant is not None
+        return not (self.place.ant is None or (not self.place.ant.blocks_path)) 
         # END Problem Optional
 
     def action(self, gamestate):
@@ -478,12 +484,19 @@ class NinjaAnt(Ant):
     food_cost = 5
     # OVERRIDE CLASS ATTRIBUTES HERE
     # BEGIN Problem Optional 1
-    implemented = False   # Change to True to view in the GUI
+    implemented = True   # Change to True to view in the GUI
+    blocks_path = False 
     # END Problem Optional 1
 
     def action(self, gamestate):
         # BEGIN Problem Optional 1
         "*** YOUR CODE HERE ***"
+        curr_place = self.place
+        temp_bees_list = list(curr_place.bees)
+
+        for bee in temp_bees_list:
+                bee_index = curr_place.bees.index(bee)
+                curr_place.bees[bee_index].reduce_armor(self.damage)
         # END Problem Optional 1
 
 class ContainerAnt(Ant):
@@ -494,11 +507,13 @@ class ContainerAnt(Ant):
     def can_contain(self, other):
         # BEGIN Problem Optional 2
         "*** YOUR CODE HERE ***"
+        return (not self.contained_ant) and (not isinstance(other, ContainerAnt))
         # END Problem Optional 2
 
     def contain_ant(self, ant):
         # BEGIN Problem Optional 2
         "*** YOUR CODE HERE ***"
+        self.contained_ant = ant 
         # END Problem Optional 2
 
     def remove_ant(self, ant):
@@ -519,6 +534,8 @@ class ContainerAnt(Ant):
     def action(self, gamestate):
         # BEGIN Optional 2
         "*** YOUR CODE HERE ***"
+        if self.contained_ant:
+            self.contained_ant.action(gamestate)
         # END Optional 2
 
 class BodyguardAnt(ContainerAnt):
@@ -528,7 +545,9 @@ class BodyguardAnt(ContainerAnt):
     food_cost = 4
     # OVERRIDE CLASS ATTRIBUTES HERE
     # BEGIN Optional 2
-    implemented = False   # Change to True to view in the GUI
+    implemented = True   # Change to True to view in the GUI
+    def __init__(self, *args, armor=2):
+        ContainerAnt.__init__(self, *args, armor)
     # END Optional 2
 
 class TankAnt(ContainerAnt):
