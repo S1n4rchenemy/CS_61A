@@ -185,6 +185,37 @@ def is_bst(t):
     False
     """
     "*** YOUR CODE HERE ***"
+    if t.is_leaf():
+        return True
+    else:
+        if len(t.branches) == 1:
+            return is_bst(t.branches[0])
+        elif len(t.branches) == 2:
+            if is_bst(t.branches[0]) and is_bst(t.branches[1]):
+                left_max = bst_max(t.branches[0])
+                right_min = bst_min(t.branches[1])
+                return left_max <= t.label < right_min
+            return False
+        else:
+            return False
+
+def bst_min(t):
+    if t.is_leaf():
+        return t.label
+    else:
+        if len(t.branches) == 1:
+            return min(t.label, bst_min(t.branches[0]))
+        return bst_min(t.branches[0])
+
+def bst_max(t):
+    if t.is_leaf():
+        return t.label
+    else:
+        if len(t.branches) == 1:
+            return max(t.label, bst_max(t.branches[0]))
+        return bst_max(t.branches[1])
+        
+
 
 
 def preorder(t):
@@ -198,6 +229,13 @@ def preorder(t):
     [2, 4, 6]
     """
     "*** YOUR CODE HERE ***"
+    if t.is_leaf():
+        return [t.label]
+    else:
+        result = [t.label]
+        for branch in t.branches:
+            result.extend(preorder(branch))
+        return result
 
 
 def path_yielder(t, value):
@@ -236,9 +274,11 @@ def path_yielder(t, value):
     """
 
     "*** YOUR CODE HERE ***"
-
-    for _______________ in _________________:
-        for _______________ in _________________:
+    if t.label == value:
+        yield [t.label]
+    for branch in t.branches:
+        for sub_ans in path_yielder(branch, value):
+            yield [t.label] + sub_ans
 
             "*** YOUR CODE HERE ***"
 
