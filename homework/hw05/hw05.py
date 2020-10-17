@@ -280,7 +280,6 @@ def path_yielder(t, value):
         for sub_ans in path_yielder(branch, value):
             yield [t.label] + sub_ans
 
-            "*** YOUR CODE HERE ***"
 
 
 class Link:
