@@ -94,13 +94,14 @@ def has_cycle_constant(link):
     >>> has_cycle_constant(t)
     False
     """
-    "*** YOUR CODE HERE ***"        # space check is needed
-    cache = link
-    while cache.rest != Link.empty:
-        if cache.rest == link:
-            return True 
-        cache = cache.rest
-    return False
+    "*** YOUR CODE HERE ***"        # Not sure whether this is correct
+    count = 1
+    while True:
+        if eval('link' + count * '.rest') is Link.empty:
+            return False
+        elif eval('link' + count * '.rest') == link:
+            return True    
+        count += 1
 
 
 
