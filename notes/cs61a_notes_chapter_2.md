@@ -131,8 +131,22 @@ toc:
         - [<u>Coercion</u>](#ucoercionu)
     - [2.8 Efficiency](#28-efficiency)
       - [2.8.1 Measuring Efficiency](#281-measuring-efficiency)
+        - [<u>Space</u>](#uspaceu)
+      - [2.8.2 Memorization](#282-memorization)
+      - [2.8.3 Orders of Growth](#283-orders-of-growth)
+        - [<u>Theta notation</u>](#utheta-notationu)
+      - [2.8.4 Example: Exponentiation](#284-example-exponentiation)
     - [2.9 Recursive Objects](#29-recursive-objects)
       - [2.9.1 Linked List Class](#291-linked-list-class)
+        - [<u>Recursive construction</u>](#urecursive-constructionu-1)
+      - [2.9.2 Tree Class](#292-tree-class)
+        - [<u>Internal values</u>](#uinternal-valuesu)
+      - [2.9.3 Sets](#293-sets)
+        - [<u>Implementing sets</u>](#uimplementing-setsu)
+        - [<u>Sets as unordered sequences</u>](#usets-as-unordered-sequencesu)
+        - [<u>Sets as ordered sequences</u>](#usets-as-ordered-sequencesu)
+        - [<u>Sets as binary search trees</u>](#usets-as-binary-search-treesu)
+        - [<u>Python set implementation</u>](#upython-set-implementationu)
 
 <!-- /code_chunk_output -->
 
@@ -3421,7 +3435,8 @@ String values provide a fundamental medium for communicating information among h
 Python stipulates that all objects should produce two different string representations:
 
 1. one that is **human-interpretable** text.  $\implies$  The constructor function for string, `str`. $\implies$ `print(object)` is *identical* to `print(str(object))`
-2. one that is a **Python-interpretable** expression.  $\implies$  The `repr` function returns a Python expression that evaluates to an equal object. $\implies$ In *interactive mode*, when this command is `>>> object` executed, the `repr` is actually implicitly called..
+2. one that is a **Python-interpretable** expression.  $\implies$  The `repr` function returns a Python expression that evaluates to an equal object. $\implies$ In *interactive mode*, when this command is `>>> object` executed, the `repr` is actually implicitly called.
+     * Note the slight difference between these two calls on the *quotation mark*. 
 
 > *The `repr` and `str` are often the same, but not always.* 
 
@@ -4126,6 +4141,243 @@ Decisions of how to represent and process data are often influenced by the effic
 
 #### 2.8.1 Measuring Efficiency 
 
+Measuring exactly how long a program requires to run or how much *memory* it consumes is chanllenging, because the results depend upon many details of how a computer is configured.
+
+A more reliable way to characterize the efficiency of a program is to measure how many **times** some event occurs, such as a function call.
+
+Let's return to the recursive version of computing the Fibonacci numbers.
+
+```python
+>>> def fib(n):
+        if n == 0:
+            return 0
+        if n == 1:
+            return 1
+        return fib(n-2) + fib(n-1)
+
+>>> fib(5)
+5
+```
+
+Consider the pattern of computation that results from evaluating `fib(6)`, dipicted below.
+
+<img src='./assets/2_8_1_fig_1.png' width='' alt='2.8.1 fig. 1' /><br/>
+
+In general, the evolved process looks like a tree.  Each *blue dot* indicates a completed computation of a Fibonacci number in the traversal of this tree.
+
+As a prototypical tree recursion, this function is a **terribly inefficient** way to compute Fibonacci numbers because it does so much redundant computation.  *e.g.*, the entire computation of `fib(3)` is duplicated.
+
+We can measure this inefficiency.  The higher-order `count` cuntion returns an equivalent function to its argument that also maintains a `call_count` attribute.  In this way, we can inspect just how many times `fib` is called.
+
+```python
+>>> def count(f):
+        def counted(*args):
+            counted.call_count += 1
+            return f(*args)
+        counted.call_count = 0
+        return counted 
+``` 
+
+By counting the number of calls to `fib`, we see that the calls required grows faster than the Fibonacci numbers themselves. 
+
+* This rapid expansion of calls is characteristic of tree-recursive functions.
+
+```python
+>>> fib = count(fib)
+>>> fib(19)
+4181
+>>> fib.call_count
+13529
+``` 
+<br/>
+
+
+
+##### <u>Space</u>
+
+To understand the space requirements of a function, we must specify generally how memory is used, preserved, and reclaimed in our environment model of computation.
+
+In evaluating an expression,
+
+* the interpreter preserves all **active** environments and all values and frames referenced by those environments.
+  * An environment is active if it provides the evaluation context for some expression being evaluated.
+  * An environment becomes inactive whenever the funciton call for which its first frame was created finally **returns**.
+
+For example, the space required for tree-recursive funcitons will be *proportional* to the *maximum depth* of the tree.
+
+The higher-order `count_frames` function tracks `open_count`, the number of calls to the funciton `f` that have not yet returned.  The `max_count` attribute is the maximum value ever attained by `open_count`, and it corresponds to the maximum number of frames that are ever simultanerously active during the course of computation.
+
+```python
+>>> def count_frames(f):
+        def counted(*args):
+            counted.open_count += 1
+            counted.max_count = max(counted.max_count, counted.open_count)
+            result = f(*args)
+            counted.open_count -= 1
+            return result
+        counted.open_count = 0
+        counted.max_count = 0
+        return counted
+
+>>> fib = count_frames(fib)
+>>> fib(19)
+4181
+>>> fib.open_count
+0
+>>> fib.max_count
+19
+>>> fib(24)
+46368
+>>> fib.max_count
+24
+``` 
+
+To summarize, 
+
+* the space requirement of the `fib` function, measured in active frames, is one less than the input, which tends to be **small**.  
+* The time requirement measured in total recursive calls is larger than the output, which tends to be **huge**.
+<br/>
+<br/>
+
+
+
+
+#### 2.8.2 Memorization 
+
+Tree-recursive computational processes can often be made more efficient through ***memorization***, a powerful technique for increasing the efficiency of recursive functions that repeat computation.
+
+A memorized function will store the return value for any arguments it has previously received.  *e.g.*, a second call to `fib(25)` would not re-compute the return value recursively, but instead return the existing one that has already been constructed.
+
+Memorization can be expressed naturally as a higher-order function, which can also be used as a decorator.  The definition below creates a *cache* of previously computed results, indexed by the arguments form which they were computed.  The use of a dictionary requires that the argument to the memorized funciton be immutable.
+
+```python
+>>> def memo(f):
+        cache = {}
+        def memoized(n):
+            if n not in cache:
+                cache[n] = f(n)
+            return cache[n]
+        return memoized
+``` 
+
+If we apply `memo` to the recursive computation of Fibonacci numbers, a new pattern of computation evolves, depicted below.
+
+<img src='./assets/2_8_2_fig_1.png' width='' alt='2.8.2 fig. 1' /><br/>
+
+As a result, much of the tree-recursive computation is not required at all.
+
+Using `count`, we can see that the `fib` function is actually only called for each unique input to `fib`.
+
+```python
+>>> counted_fib = count(fib)
+>>> fib  = memo(counted_fib)
+>>> fib(19)
+4181
+>>> counted_fib.call_count
+20
+>>> fib(34)
+5702887
+>>> counted_fib.call_count
+35
+``` 
+<br/>
+<br/>
+
+
+
+
+#### 2.8.3 Orders of Growth 
+
+Exactly determining just how much space or time will be used when calling a function is a very difficult task that depends upon many factors.
+
+A useful way to analyze a process is to categorize it along with a group of processes that all have *similar requirements*.
+
+A useful categorization is the ***order of growth*** of a process, which expresses in simple terms how the resource requirements of a process grow as a *funciton of the input*.
+<br/>
+
+
+As an example, we will analyze the funciton `count_factors` below, which counts the number of integer that evenly divide an input `n`.  The funciton attempts to divide `n` by every integer less than or equal to its square root.  The implementation takes advantage of the fact that if **$k$** divides **$n$** and **$k < \sqrt{n}$**, then there is another factor **$j = n/k$** such that **$j > \sqrt{n}$**.
+
+```python
+from math import sqrt
+def count_factors(n):
+    sqrt_n = sqrt(n)
+    k, factors = 1, 0
+    while k < sqrt_n:
+        if n % k == 0:
+            factors += 2
+        k += 1
+    if k * k == n:
+        factors += 1
+    return factors
+
+result = count_factors(576)
+```
+
+*How much time is required to evaluate `count_factors`?*  
+
+The exact answer will vary on different machines, but we can make some useful general observations about the amount of computation involved.
+
+* The total number of times this process executes the body of the `while` statement is the greatest integer less than **$\sqrt{n}$**.
+* The statements before and after this `while` statement are executed exactly once.
+
+$\implies$ The total number of statements executed is **$w \cdot \sqrt{n} + v$**, where **$w$** is the number of statements in the `while` body and **$v$** is the number of statements outside of the `while` statement.
+
+Although it is not exact (the constans $w$ and $v$ are not constant at all), this formula generally characterizes how much time will be required to evaluate `count_factors` as a function of the input `n`.
+
+In particular, the order of growth for `count_factors` expresses in precise terms that the amount of time required to compute `count_factors(n)` scales at the rate **$\sqrt{n}$**, within the margin of some constant factors.
+<br/>
+
+
+##### <u>Theta notation</u>
+
+Let $n$ be a parameter that measures the size of the input to some process, and let $R(n)$ be the amount of some resource that the process requires for an input of size $n$.
+
+In our previous examples we took $n$ to be the number for which a given funciton is to be computed, **but** there are other possibilities.  For instance, if our goal is to compute an approximation to the square root of a number, we might take $n$ to be the number of digits of accuracy required.
+
+$R(n)$ might measure the amount of memory used, the number of elementary machine steps performed, and so on.  In computers that do only a fixed number of steps at a time, the time required to evaluate an expression will be proportional to the number of elementary steps performed in the process of evaluation.
+
+We say that $R(n)$ has order of growth $\Theta(f(n))$, written $R(n) = \Theta(f(n))$ (pronounced "theta of $f(n)$"), if there are positive constants $k_1$ and $k_2$ independent of $n$ such that 
+
+$$
+k_1 \cdot f(n) \leq R(n) \leq k_2 \cdot f(n)
+$$
+
+for any value of $n$ larger than some minimum $m$, in other words, for large $n$, the value $R(n)$ is always sandwiched between two values that both scale with $f(n)$:
+
+* A lower bound $k_1 \cdot f(n)$ and 
+* An upper bound $k_2 \cdot f(n)$
+<br/>
+
+
+We can apply this definition to show that the number of steps required to evaluate `count_factors(n)` grows as $\Theta(\sqrt{n})$ by inspecting the function body.
+
+1. We choose $k_1 = 1$ and $m = 0$, so that the lower bound states that `count_factors(n)` requires at least $1 \cdot \sqrt{n}$ steps for any $n > 0$.
+   * There are at least 4 lines executed outside of the `while` statement, each of which takes at least 1 step to execute.  
+   * There are at least two lines executed within the `while` body, along with the while header itself.  All of these require at least 1 step.
+   * The `while` body is evaluated at least $\sqrt{n} - 1$ times.
+  
+    $\implies$ The process requires at least $4 + 3 \cdot (\sqrt{n} - 1)$ steps, which is always larger than $k_1 \cdot \sqrt{n}$
+<br/>
+
+2. We assume that any single line in the body of `count_factors` requires at most `p` steps.  This assumption isn't true for every line of Python, but does hold in this case.  $\implies$  evaluating `count_factors(n)` can require at most $p \cdot (5 + 4\sqrt{n})$, because
+   * There are 5 lines outside of the `while` statement and 4 within (including the header).  This upper bound holds even if every `if` header evaluates to true.
+  
+   $\implies$ if we choose $k_2 = 5p$, then the steps required is always smaller than $k_2 \cdot \sqrt{n}$.
+<br/>
+<br/>
+
+
+
+
+#### 2.8.4 Example: Exponentiation 
+
+
+
+
+
+
+
 
 <br/>
 <br/>
@@ -4142,4 +4394,539 @@ Objects can have other objects as attribute values.  When an object of some clas
 
 
 #### 2.9.1 Linked List Class 
+
+A linked list is composed of a first element and the rest of the list.  The rest of a linked list is itself a linked list $\implies$ a recursive definition.
+
+A linked list is a sequence: 
+
+* it has a *finite length*, 
+* and supports *element selection* by *index*.
+
+We are now going to implement a class with the same behavior.  In this version, we will define its behavior using special method names:
+
+* `__len__` computes the length $\implies$ allows the class to work with the built-in `len` function.
+* `__getitem__` computes the element selection $\implies$ allows the use of element selection operator (square brackets or `operator.getitem`)
+  
+```python
+>>> class Link:
+        """A linked list with a first element and the rest."""
+        empty = ()    # the empty linked list is represented by an empty tuple
+        def __init__(self, first, rest=empty):
+            assert rest is Link.empty or isinstance(rest, Link)
+            self.first = first 
+            self.rest = rest 
+        def __getitem__(self, i):
+            if i == 0:
+                return self.first
+            else:
+                return self.rest[i-1]
+        def __len__(self):
+            return 1 + len(self.rest)
+
+>>> s = Link(3, Link(4, Link(5)))
+>>> len(s)
+3
+>>> s[1]
+4
+``` 
+
+> *Note the recursive definitions of `__len__` and `__getitem__` methods.* 
+
+We would also like to represent a `Link` with a string expression.  
+
+```python
+>>> def link_expression(s):
+        """Return a string that would evaluate to s."""
+        if s.rest is Link.empty:
+            rest = ''
+        else:
+            rest = ', ' + link_expression(s.rest)
+        return 'Link({0}{1})'.format(s.first, rest)
+
+>>> link_expression(s)
+'Link(3, Link(4, Link(5)))'
+``` 
+
+To use this funciton whenever an `Link` instance is displayed, we can set the `link_expression` funciton as the *value* of the special *class attribute* `__repr__`.
+
+```python
+>>> Link.__repr__ = link_expression
+>>> s
+Link(3, Link(4, Link(5)))
+``` 
+<br/>
+
+The `Link` class has the *closure property*.  Just as an element of a list can itself be a list, a `Link` can contain a `Link` as its `first` element.
+
+```python
+>>> s_first = Link(s, Link(6))
+>>> s_fist 
+Link(Link(3, Link(4, Link(5))), Link(6))
+``` 
+
+The `s_first` linked list has only two elements, but its first element is a linked list with three elements.
+
+```python
+>>> len(s_first)
+2
+>>> len(s_first[0])
+3
+>>> s_first[0][2]
+5
+``` 
+<br/>
+
+
+Recursive funcitons are particularly well-suited to manipulate linked lists.  For instance, the recursive `extend_link` function builds a linked list containing  the elements of one `Link` instance `s` followed by the elements of another `Link` instance `t`.  Installing this function as the `__add__` method of the `Link` class emulates the addition behavior of a built-in list.
+
+```python
+>>> def extend_link(s, t):
+        if s is Link.empty:
+            return t
+        else:
+            return Link(s.first, extend_link(s.rest, t))
+
+>>> extend_link(s, s)
+Link(3, Link(4, Link(5, Link(3, Link(4, Link(5))))))
+>>> Link.__add__ = extend_link
+>>> s + s
+Link(3, Link(4, Link(5, Link(3, Link(4, Link(5))))))
+``` 
+<br/>
+
+
+Rather than list comprehensions, one linked list can be generated from another using two higher-order functions: `map_link` and `filter_link`.
+
+The `map_link` function applies a function `f` to each element of a linked list `s` and constructs a linked list containing the results.
+
+```python
+>>> def map_link(f, s):
+        if s is Link.empty:
+            return s
+        else:
+            return Link(f(s.first), map_link(f, s.rest))
+
+>>> map_link(square, s)
+Link(9, Link(16, Link(25)))
+``` 
+
+The `filter_link` function returns a linked list containing all elements of a linked list `s` for which `f` returns a true value.  The combination of `map_link` and `filter_link` can express the same logic as a list comprehension.
+
+```python
+>>> def filter_link(f, s):
+        if s is Link.empty:
+            return s
+        else:
+            filtered = filter_link(f, s.rest)
+            if f(s.first):
+                return Link(s.first, filtered)
+            else:
+                return filtered 
+
+>>> odd = lambda x: x % 2 == 1
+>>> map_link(square, filter_link(odd, s))
+Link(9, Link(25))
+>>> [square(x) for x in [3, 4, 5] if odd(x)]
+[9, 25]
+``` 
+<br/>
+
+
+The `join_link` funciton recursively constructs a string that contains the elements of a linked list separated by some `separator` string.  The result is much more compact than the output of `link_expression`
+
+```python
+>>> def join_link(s, separator):
+        if s is Link.empty:
+            return ""
+        elif s.rest is Link.empty:
+            return str(s.first)
+        else:
+            return str(s.first) + separator + join_link(s.rest, separator)
+
+>>> join_link(s, ", ")
+'3, 4, 5'
+``` 
+<br/>
+
+
+
+##### <u>Recursive construction</u>
+
+Linked lists are particularly useful when constructing sequences incrementally, a situation that arises often in recursive computations.
+
+Here we are going to take the `count_partition` again as an example.
+
+We follow the same recursive analysis of the problem as we did while counting: partitioning `n` using integers up to `m` involves either
+
+1. partitioning `n-m` using integers up to `m`, or 
+2. partitioning `n` using integers up to `m-1`
+
+For base cases,
+
+1. 0 has an empty partition,
+2. it is impossible to partition a negative integer or use parts smaller than 1
+
+```python
+>>> def partitions(n, m):
+        """Return a linked list of partitions of n using parts of up to m.
+        Each partition is represented as a linked list.
+        """
+        if n == 0:
+            return Link(Link.empty) # A list containing the empty partition
+        elif n < 0 or m == 0:
+            return Link.empty
+        else:
+            using_m = partitions(n-m, m)
+            with_m = map_link(lambda s: Link(m, s), using_m)
+            without_m = partitions(n, m-1)
+            return with_m + without_m
+``` 
+
+In the recursive case, we construct two sublists of partitions.  The first uses `m`, and so we add `m` to each element of the result `using_m` to form `with_m`.
+
+The result of `partitions` is highly nested: a linked list of linked lists.  Using `join_link` with appropriate separators, we can display the partitions in a human-readable manner.
+
+```python
+>>> def print_partitions(n, m):
+        lists = partitions(n, m)
+        strings = map_link(lambda s: join_link(s, " + "), lists)
+        print(join_link(strings, "\n"))
+
+>>> print_partitions(6, 4)
+4 + 2
+4 + 1 + 1
+3 + 3
+3 + 2 + 1
+3 + 1 + 1 + 1
+2 + 2 + 2
+2 + 2 + 1 + 1
+2 + 1 + 1 + 1 + 1
+1 + 1 + 1 + 1 + 1 + 1
+``` 
+<br/>
+<br/>
+
+
+
+
+#### 2.9.2 Tree Class
+
+Trees can also be represented by instances of user-defined classes, rather than nested instances of built-in sequence types.
+
+##### <u>Internal values</u>
+
+Trees can have internal values at the roots of each subtree, and we call those internal values `label`s in the tree. (This is actually the most common type of tree in this text)
+
+We can define a class of this kind of tree.
+
+```python
+>>> class Tree:
+        def __init__(self, label, branches=()):
+            self.label = label
+            for branch in branches:
+                assert isinstance(branch, Tree)
+            self.branches = branches
+        def __repr__(self):
+            if self.branches:
+                return 'Tree({0}, {1})'.format(self.label, repr(self.branches))
+            else:
+                return 'Tree({0})'.format(repr(self.label))
+        def is_leaf(self):
+            return not self.branches
+``` 
+
+For example, the `Tree` class can represent the Fibonacci numbers.
+
+```python
+>>> def fib_tree(n):
+        if n == 1:
+            return Tree(0)
+        elif n == 2:
+            return Tree(1)
+        else:
+            left = fib_tree(n-2)
+            right = fib_tree(n-1)
+            return Tree(left.label + right.label, (left, right))
+
+>>> fib_tree(5)
+Tree(3, (Tree(1, (Tree(0), Tree(1))), Tree(2, (Tree(1), Tree(1, (Tree(0), Tree(1)))))))
+``` 
+
+Trees represented in this way are also processed using recursive functions.  For instance, we can sum the labels of a tree.  As a base case, we return that an empty branch has no labels.
+
+```python
+>>> def sum_labels(t):
+        """Sum the labels of a Tree instance, which may be None."""
+        return t.label + sum([sum_labels(b) for b in t.branches])
+
+>>> sum_labels(fib_tree(5))
+10
+``` 
+
+We can also apply `memo` to construct a Fibonacci tree, where repeated subtrees are only created once by the memorized version of `fib_tree`, but are used multiple times as branches of different larger trees.
+
+```python
+>>> fib_tree = memo(fib_tree)
+>>> big_fib_tree = fib_tree(35)
+>>> big_fib_tree.label
+5702887
+>>> big_fib_tree.branches[0] is big_fib_tree.branches[1].branches[1]
+True
+>>> sum_labels = memo(sum_labels)
+>>> sum_labels(big_fib_tree)
+142587180
+``` 
+
+The amount of computation time and memory saved by memorization in thses cases is substantial.  Instead of creating 18,454,929 different instances of the `Tree` class, we now create only 35.
+<br/>
+<br/>
+
+
+
+
+#### 2.9.3 Sets 
+
+In addition to the list, tuple, and dictionary, Python has a fourth built-in container type called a `set`.  
+
+* Set literals follow the mathematical notation of elements enclosed in *braces*.
+* Duplicate elements are *removed* upon construction.
+* Sets are *unordered* collections, and so the printed ordering may differ from the element ordering in the set literal.
+
+```python
+>>> s = {3, 2, 1, 4, 4}
+>>> s
+{1, 2, 3, 4}
+``` 
+
+Python sets support a variety of operations, including *membership tests*, *length computation*, and the standard set operatipn of *union* and *intersection*.
+
+```python
+>>> 3 in s
+True 
+>>> len(s)
+4
+>>> s.union({1, 5})
+{1, 2, 3, 4, 5}
+>>> s.intersection({6, 5, 4, 3})
+{3, 4}
+``` 
+
+In addition to `union` and `intersection`, Python sets support several other methods.  The predicates `isdisjoint`, `issubset`, and `issuperset` provide set comparison.  
+
+Sets are ***mutable***, and can be changed one element at a time using `add`, `discard`, and `pop`.  Additional methods provide multi-element mutations, such as `clear` and `update`.
+
+The Python [documentation for sets](https://docs.python.org/3/library/stdtypes.html#set) should be sufficiently intelligible at this point of the course to fill in the details.
+<br/>
+
+
+##### <u>Implementing sets</u>
+
+> Abstractly, a set is a collection of **distinct** objects that supports membership testing, union, intersection, and adjunction.
+
+* Adjoining an element and a set returns a new set that contains all of the original set's elements along with the new element, if it is distinct.
+
+* Union and intersection return the set of elements that appear in either or both sets, respectively.
+
+As with any data abstraction, we are free to implement any functions over any representation of sets that provides this collection of behaviors.
+
+In the remainder of this section, we consider three different methods of implementing sets that vary in their representation.  We will characterize the efficiency of these different representations by analyzing the order of growth of set operations.  We will use our `Link` and `Tree` classes form earlier in this section, which allow for simple and elegant recursive solutions for elementary set operations.
+<br/>
+
+
+
+##### <u>Sets as unordered sequences</u>
+
+One way to represent a set is as a sequence in which no element appears more than once.  The empty set is represented by the empty sequence.  Membership testing walks recursively through the list.
+
+```python
+>>> def empty(s):
+        return s is Link.empty
+>>> def set_contains(s, v):
+        """Return True if and only if set s contains v."""
+        if empty(s):
+            return False
+        elif s.first == v:
+            return True
+        else:
+            return set_contains(s.rest, v)
+
+>>> s = Link(4, Link(1, Link(5)))
+>>> set_contains(s, 2)
+False
+>>> set_contains(s, 5)
+True
+``` 
+
+This implementation of `set_contains` requires **$\Theta(n)$** time on average to test membership of an element, where **$n$** is the size of the set `s`.  
+
+Using this linear-time function for membership, we can adjoin an element to a set, also in *linear time*.
+
+```python
+>>> def adjoin_set(s, v):
+        """Return a set containing all elements of s and element v."""
+        if set_contains(s, v):
+            return s
+        else:
+            return Link(v, s)
+
+>>> t = adjoin_set(s, 2)
+>>> t
+Link(2, Link(4, Link(1, Link(5))))
+``` 
+
+Intersecting two sets `set1` and `set2` also requires membership testing, but this time each element of `set1` must be tested for membership in `set2`, leading to a quadratic order of growth in the number of steps, **$\Theta(n^2)$**, for two sets of size **$n$**.
+
+```python
+>>> def union_set(set1, set2):
+        """Return a set containing all elements either in set1 or set2."""
+        set1_not_set2 = keep_if_link(set1, lambda v: not set_contains(set2, v))
+        return extend_link(set1_not_set2, set2)
+
+>>> union_set(t, s)
+Link(2, Link(4, Link(1, Link(5))))
+``` 
+
+<br/>
+
+
+
+##### <u>Sets as ordered sequences</u>
+
+One way to speeed up our set operations is to change the representation so that the set elements are listed in **increasing order**.
+
+One advantage of ordering shows up in `set_contains`: In checking the *presence* of an object, we no longer have to scan the entire set.
+
+```python
+>>> def set_contains(s, v):
+        if empty(s) or s.first > v:
+            return False
+        elif s.first == v:
+            return True 
+        else:
+            return set_contains(s.rest, v)
+
+>>> u = Link(1, Link(4, Link(5)))
+>>> set_contains(u, 0)
+False
+>>> set_contains(u, 4)
+True
+``` 
+
+*How many steps does this save?*
+
+* In the worst case, the item we are looking for may be the largest one in the set, so the number of steps is the same as for the unordered representation.  
+* On the other hand, if we search for items of many different sizes we can expect that sometimes we will be able to stop searching at a point near the beginning of the list and that other times we will still need to examine most of the list.
+
+$\implies$ On *average* we should expect to have to examnie about *half* of the items in the set, *i.e.*, **$\frac{n}{2}$**.  This is still **$\Theta(n)$** growth, but it does save us some time in practice over the previous implementation. 
+<br/>
+
+
+We can obtain a more impressive speedup by re-implementing `intersect_set`.  
+* In the unordered representation, this operation required **$\Theta(n^2)$** steps because we performed a complete scan of `set2` for each element of `set1`.
+* With the ordered representation, we can use a more clever method: we can *iterate* through both sets **simultaneously**, tracking an element `e1` in `set1` and `e2` in `set2`.  When `e1` and `e2` are equal, we include that element in the intersection.
+  * Suppose that `e1` is less than `e2`.  Since `e2` is smaller than the remaining elements of `set2`, we can immediately conclude that `e1` cannot appear anywhere in the remainder of `set2` and hence is not in the intersection. $\implies$ discard `e1` and proceed to the next element of `set1`.  
+  * Similar logic advances through the elements of `set2` when `e2` < `e1`.
+
+```python
+>>> def intersect_set(set1, set2):
+        if empty(set1) or empty(set2):
+            return Link.empty
+        else:
+            e1, e2 = set1.first, set2.first
+            if e1 == e2:
+                return Link(e1, intersect_set(set1.rest, set2.rest))
+            elif e1 < e2:
+                return intersect_set(set1.rest, set2)
+            elif e2 < e1:
+                return intersect_set(set1, set2.rest)
+
+>>> intersect_set(s, s.rest)
+Link(4, Link(5))
+```
+
+*How many steps does this strategy save?*
+
+In each step we shrink the size of at least one of the sets.  $\implies$  The number of steps required is at most the the *sum* of the sizes of `set1` and `set2`, *i.e.* **$\Theta(n)$**, rather than the product of the sizes, **$\Theta(n^2)$**, as with the unordered representation. 
+
+This is a considerable speed up!
+
+Adjunction and union for sets represented as ordered sequences can also be computed in **linear time**.
+<br/>
+
+
+
+##### <u>Sets as binary search trees</u>
+
+We can do bettern than the ordered-list representation by arranging the set elements in the form of a ***tree*** with *exactly two branches*.
+
+* The `entry` of the root of the tree holds one element of the set 
+* The entries within the `left` branch include all *elements* samller thatn the one at the root
+* The entries in the `right` branch include all elements *greater* than the one at the root.
+
+The figure below shows *some* trees that represent the set `{1, 3, 5, 7, 9, 11}`.  The same set may be represented by a tree in a number of different ways.
+
+<img src='./assets/2_9_3_fig_1.png' width='500' alt='2.9.3 fig. 1' /><br/>
+
+The **advantage** of the tree representation:
+
+Suppose we want to check whether a value `v` is contained in a set.  We begin by comparing `v` with `entry`:
+
+* If `v` is less than this, we know that we need only search the `left` subtree.
+* If `v` is greater, we need only search the `right` subtree.
+
+If the tree is *"balances"*, each of these subtrees will be about half the size of the original.  $\implies$  In one step, we have reduced the problem of searching a tree of size **$n$** to searching a tree of size **$\frac{n}{2}$**.  $\implies$  The steps needed to search a tree grows as **$\Theta(\log n)$**.
+
+For large sets, this will be a significant speedup over the previous representations.
+
+```python
+>>> def set_contains(s, v):
+        if s is None:
+            return False
+        elif s.entry == v:
+            return True
+        elif s.entry < v:
+            return set_contains(s.right, v)
+        elif s.entry > v:
+            return set_contains(s.left, v)
+``` 
+
+Adjoining an item to a set is implemented similarly and also requires **$\Theta(\log n)$** steps.
+
+```python
+>>> def adjoin_set(s, v):
+        if s is None:
+            return Tree(v)
+        elif s.entry == v:
+            return s
+        elif s.entry < v:
+            return Tree(s.entry, s.left, adjoin_set(s.right, v))
+        elif s.entry > v:
+            return Tree(s.entry, adjoin_set(s.left, v), s.right)
+
+>>> adjoin_set(adjoin_set(adjoin_set(None, 2), 3), 1)
+Tree(2, Tree(1), Tree(3))
+``` 
+<br/>
+
+Our claim that searching the tree can be performed in a logarithmic number of steps rests on the assumption that the tree is **"balanced"**, *i.e.*, that the left and right subtree of every tree have approximately the same number of elements.
+
+*How can we certain that the trees we construct will be balanced?*
+
+We can expect that if we add elements "randomly" the tree will tend to be balanced on the average.  **But** this is not guaranteed.  For example, if we start with an empty set and adjoin the numbers 1 through 7 in sequence, we end up with a highly unbalanced tree where all the left subtrees are empty.
+
+One way to solve this problem is to define an operation that *transforms an arbitary tree into a balance tree with the same elements*.  We can perform this transformation after every few `adjoin_set` operations to keep our set in balance.
+
+Intersection and union operations can be performed on tree-structured sets in linear time by converting them to ordered lists and back.
+<br/>
+
+
+##### <u>Python set implementation</u>
+
+The `set` type that is built into Python does not use any of these representations internally.  Instead, Python uses a representation that gives constant-time membership tests and adjoin operations based on a technique called ***hashing***.
+
+Built-in Python sets **cannot** contain mutable data types, such as lists, dictionaries, or other sets.  To allow for nested sets, Python also includes a built-in immutable `frozenset` class that shares methods with the `set` class but excludes mutation methods and operators.
+<br/>
+<br/>
+
+
 
