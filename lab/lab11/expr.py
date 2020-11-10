@@ -291,10 +291,7 @@ class LambdaFunction(Value):
         "*** YOUR CODE HERE ***"
         env = self.parent.copy()
         new_var = {x[0]: x[1] for x in zip(self.parameters, arguments)}
-        #print('DEBUG: ', new_var)
-        #print('DEBUG: body is', repr(self.body))
         env.update(new_var)
-        #print('DEBUG: env is ', env)
         return self.body.eval(env)
 
 
