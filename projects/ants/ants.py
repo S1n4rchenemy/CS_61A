@@ -428,6 +428,7 @@ class Bee(Insect):
     damage = 1
     # OVERRIDE CLASS ATTRIBUTES HERE
     is_watersafe = True
+    is_scared = False
 
 
     def sting(self, ant):
@@ -456,6 +457,11 @@ class Bee(Insect):
         # Extra credit: Special handling for bee direction
         # BEGIN EC
         "*** YOUR CODE HERE ***"
+        if is_scared:
+            if isinstance(self.place.entrance, Hive):
+                destination = self.place 
+            else:
+                destination = self.place.entrance 
         # END EC
         if self.blocked():
             self.sting(self.place.ant)
@@ -587,6 +593,10 @@ def make_slow(action, bee):
     """
     # BEGIN Problem Optional 4
     "*** YOUR CODE HERE ***"
+    def slow_action(bee, gamestate):
+        if gamestate.time % 2 == 0:
+            bee.action(gamestate)
+    return slow_action 
     # END Problem Optional 4
 
 def make_scare(action, bee):
@@ -596,12 +606,15 @@ def make_scare(action, bee):
     """
     # BEGIN Problem Optional 4
     "*** YOUR CODE HERE ***"
+    def scared_action(bee, gamestate):
+
     # END Problem Optional 4
 
 def apply_status(status, bee, length):
     """Apply a status to a BEE that lasts for LENGTH turns."""
     # BEGIN Problem Optional 4
     "*** YOUR CODE HERE ***"
+
     # END Problem Optional 4
 
 
@@ -611,7 +624,7 @@ class SlowThrower(ThrowerAnt):
     name = 'Slow'
     food_cost = 4
     # BEGIN Problem Optional 4
-    implemented = False   # Change to True to view in the GUI
+    implemented = True   # Change to True to view in the GUI
     # END Problem Optional 4
 
     def throw_at(self, target):
@@ -625,7 +638,7 @@ class ScaryThrower(ThrowerAnt):
     name = 'Scary'
     food_cost = 6
     # BEGIN Problem Optional 4
-    implemented = False   # Change to True to view in the GUI
+    implemented = True   # Change to True to view in the GUI
     # END Problem Optional 4
 
     def throw_at(self, target):
