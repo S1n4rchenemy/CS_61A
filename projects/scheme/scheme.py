@@ -355,6 +355,17 @@ def do_and_form(expressions, env):
     """
     # BEGIN PROBLEM 12
     "*** YOUR CODE HERE ***"
+    if len(expressions) == 0:
+        return True
+    else:
+        curr = scheme_eval(expressions.first, env)
+        if not is_true_primitive(curr):
+            return False 
+        elif len(expressions) == 1:
+            return curr
+        else:
+            return do_and_form(expressions.rest, env)
+
     # END PROBLEM 12
 
 def do_or_form(expressions, env):
@@ -372,6 +383,14 @@ def do_or_form(expressions, env):
     """
     # BEGIN PROBLEM 12
     "*** YOUR CODE HERE ***"
+    if len(expressions) == 0:
+        return False 
+    else:
+        curr = scheme_eval(expressions.first, env)
+        if is_true_primitive(curr):
+            return curr 
+        else:
+            return do_or_form(expressions.rest, env)
     # END PROBLEM 12
 
 def do_cond_form(expressions, env):
@@ -392,6 +411,10 @@ def do_cond_form(expressions, env):
         if is_true_primitive(test):
             # BEGIN PROBLEM 13
             "*** YOUR CODE HERE ***"
+            if clause.rest is nil:
+                return test
+            else:
+                return eval_all(clause.rest, env)
             # END PROBLEM 13
         expressions = expressions.rest
 
@@ -416,6 +439,16 @@ def make_let_frame(bindings, env):
     names, values = nil, nil
     # BEGIN PROBLEM 14
     "*** YOUR CODE HERE ***"
+    while bindings is not nil:
+        validate_form(bindings.first, 2, 2)
+        names = Pair(bindings.first.first, names)
+        if len(bindings.first.rest) == 1:
+            value = scheme_eval(bindings.first.rest.first, env)
+        else:
+            value = scheme_eval(bindings.first.rest, env)
+        values = Pair(value, values)
+        bindings = bindings.rest
+    validate_formals(names)
     # END PROBLEM 14
     return env.make_child_frame(names, values)
 

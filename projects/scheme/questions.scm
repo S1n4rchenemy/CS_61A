@@ -13,8 +13,15 @@
 ;; Returns a list of two-element lists
 (define (enumerate s)
   ; BEGIN PROBLEM 15
-  'replace-this-line
-  )
+  (cond 
+    ((null? s) '())
+    ((null? (cdr s))
+      (cons (list 0 (car s)) nil))
+    (else 
+      (cons 
+        (list 0 (car s)) 
+        (map (lambda (s) (list (+ (car s) 1) (car (cdr s)))) (enumerate (cdr s))))
+  )))
   ; END PROBLEM 15
 
 ;; Problem 16
