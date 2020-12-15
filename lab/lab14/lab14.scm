@@ -14,3 +14,10 @@
     (lambda (x) ((compose-all (cdr funcs)) ((car funcs) x))))
 )
 
+
+(define (compose-all-better-way funcs)
+  (lambda (x)
+    (if (null? funcs) 
+      x
+      ((compose-all (cdr funcs)) ((car funcs) x))))
+)

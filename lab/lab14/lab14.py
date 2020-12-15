@@ -20,14 +20,13 @@ def prune_min(t):
     "*** YOUR CODE HERE ***"
     if not t.is_leaf():
         if t.branches[0].label <= t.branches[1].label:
-            t.branches[1:2] = []
+            t.branches[1:2] = []        # Could also use .pop method 
         else:
             t.branches[0:1] = []
         prune_min(t.branches[0])
             
 
-
-def num_splits(s, d):
+def num_splits(s, d):       # Standard solution, much better than my method.
     """Return the number of ways in which s can be partitioned into two
     sublists that have sums within d of each other.
 
@@ -38,6 +37,31 @@ def num_splits(s, d):
     >>> num_splits([-2, 1, 3], 2) # [-2, 3], [1] and [-2, 1, 3], []
     2
     >>> num_splits([1, 4, 6, 8, 2, 9, 5], 3)
+    12
+    """
+    def difference_so_far(s, difference):
+        if not s:
+            if abs(difference) <= d:
+                return 1
+            else:
+                return 0
+        element = s[0]
+        s = s[1:]
+        return difference_so_far(s, difference + element) + difference_so_far(s, difference - element)
+    return difference_so_far(s, 0)//2
+
+
+def num_splits_my_bad_solution(s, d):
+    """Return the number of ways in which s can be partitioned into two
+    sublists that have sums within d of each other.
+
+    >>> num_splits_my_bad_solution([1, 5, 4], 0)  # splits to [1, 4] and [5]
+    1
+    >>> num_splits_my_bad_solution([6, 1, 3], 1)  # no split possible
+    0
+    >>> num_splits_my_bad_solution([-2, 1, 3], 2) # [-2, 3], [1] and [-2, 1, 3], []
+    2
+    >>> num_splits_my_bad_solution([1, 4, 6, 8, 2, 9, 5], 3)
     12
     """
     "*** YOUR CODE HERE ***"
